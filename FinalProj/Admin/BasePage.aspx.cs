@@ -46,43 +46,23 @@ namespace CanteenProject
                 {
                     UserID = 1,
                     PermanentID = "UID-1001",
-                    FullName = "Admin User",
+                    FullName = "Jayr Admin",
                     Email = "admin@borrowbox.com",
-                    PasswordHash = HashPassword("admin123"),
+                    PasswordHash = HashPassword("Admin@123"),
                     Role = "Admin",
-                    InviteCode = adminCode
-                };
-                var teacher = new User
-                {
-                    UserID = 2,
-                    PermanentID = "UID-1002",
-                    FullName = "John Teacher",
-                    Email = "teacher@borrowbox.com",
-                    PasswordHash = HashPassword("teacher123"),
-                    Role = "Teacher",
-                    InvitedByAdminCode = adminCode
+                    InviteCode = adminCode,
+                    InvitedByAdminCode = null,
+                    ProfilePictureUrl = "~/Admin/SetProfilePicture/jayr.jpg"  // ← PERMANENTLY SET HERE
                 };
                 AppData.Users.Add(admin);
-                AppData.Users.Add(teacher);
-                AppData.NextUserID = 1003;
+                AppData.NextUserID = 1002;
 
                 AddActivityLog(admin.Email, admin.FullName, admin.Role, "System",
-                    $"System initialized. Admin invite code: {adminCode}");
+                               $"System initialized. Admin invite code: {adminCode}");
             }
 
-            if (AppData.EquipmentList.Count == 0)
-            {
-                AppData.EquipmentList.Add(new Equipment { EquipmentID = AppData.NextEquipID++, Name = "Laptop", Category = "Electronics", Quantity = 5 });
-                AppData.EquipmentList.Add(new Equipment { EquipmentID = AppData.NextEquipID++, Name = "Calculator", Category = "Math", Quantity = 10 });
-                AppData.EquipmentList.Add(new Equipment { EquipmentID = AppData.NextEquipID++, Name = "Basketball", Category = "Sports", Quantity = 3 });
-                AppData.EquipmentList.Add(new Equipment { EquipmentID = AppData.NextEquipID++, Name = "Projector", Category = "Electronics", Quantity = 2 });
-                AppData.EquipmentList.Add(new Equipment { EquipmentID = AppData.NextEquipID++, Name = "Whiteboard Marker", Category = "Supplies", Quantity = 20 });
-                AddActivityLog("system@borrowbox.com", "System", "System", "Seed Data", "Initial equipment added.");
-            }
-
-            AppData.IsSeeded = true;
+            // ... rest of your code
         }
-
         protected User GetCurrentUser()
         {
             string email = Session["LoggedInUser"]?.ToString();
@@ -127,7 +107,7 @@ namespace CanteenProject
         }
 
         protected void AddActivityLog(string actorEmail, string actorName, string actorRole,
-            string action, string details)
+     string action, string details)
         {
             AppData.ActivityLogs.Add(new ActivityLog
             {

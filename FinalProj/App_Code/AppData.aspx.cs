@@ -15,7 +15,6 @@ namespace CanteenProject
         public static int NextRequestID = 1;
         public static int NextBorrowID = 1;
 
-        // Seed flag to prevent multiple seeding
         public static bool IsSeeded = false;
     }
 }

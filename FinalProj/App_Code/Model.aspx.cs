@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 namespace CanteenProject
 {
-    // In App_Code/Models.cs - Add ProfilePicture property to User class
-
     public class User
     {
         public int UserID { get; set; }
@@ -15,9 +13,7 @@ namespace CanteenProject
         public string Role { get; set; }
         public string InviteCode { get; set; }
         public string InvitedByAdminCode { get; set; }
-
-        // NEW: Profile picture property
-        public string ProfilePictureUrl { get; set; }  // Stores the image path
+        public string ProfilePictureUrl { get; set; }  // Profile picture
     }
 
     public class Equipment
@@ -26,6 +22,8 @@ namespace CanteenProject
         public string Name { get; set; }
         public string Category { get; set; }
         public int Quantity { get; set; }
+        public string ImageUrl { get; set; }      // ADD THIS - Equipment image
+        public string Description { get; set; }   // ADD THIS - Equipment description
     }
 
     public class BorrowRequest

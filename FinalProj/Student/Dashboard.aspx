@@ -1,11 +1,11 @@
 ﻿<%@ Page Title="Student Dashboard" Language="C#" AutoEventWireup="true" CodeBehind="Dashboard.aspx.cs" Inherits="CanteenProject.Student.Dashboard" %>
-<%@ Register Src="~/Shared/ProfilePicture.ascx" TagName="ProfilePicture" TagPrefix="uc" %>
+
 <!DOCTYPE html>
 <html>
 <head runat="server">
     <title>BorrowBox Pro - Student Dashboard</title>
     <style>
-        /* Your existing CSS here - same as before */
+        /* Same styles as Teacher dashboard above */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -15,7 +15,7 @@
             min-height: 100vh;
             padding: 2rem 1rem;
         }
-        .container { max-width: 1300px; margin: 0 auto; position: relative; }
+        .container { max-width: 1400px; margin: 0 auto; position: relative; }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 {
             font-size: 2.8rem;
@@ -24,7 +24,6 @@
             background-clip: text;
             color: transparent;
         }
-        .header p { color: #94a3b8; }
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -35,23 +34,113 @@
         }
         .right-icons {
             display: flex;
-            gap: 1rem;
+            gap: 0.8rem;
             align-items: center;
         }
+        
+        /* Professional Logout Button */
+        .logout-btn-professional {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            border: none;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .logout-btn-professional:hover {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-container {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 1.5rem;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+        .modal-header .warning-icon { font-size: 4rem; }
+        .modal-header h3 {
+            font-size: 1.5rem;
+            color: #f87171;
+            margin-top: 0.5rem;
+        }
+        .modal-body {
+            padding: 1.5rem;
+            text-align: center;
+            color: #cbd5e1;
+        }
+        .modal-body .user-info {
+            background: #0f172a;
+            padding: 0.8rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .modal-btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+        .modal-btn-cancel {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
         .notification-bell {
             position: relative;
             cursor: pointer;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             background: #1e293b;
             border-radius: 50%;
-            width: 48px;
-            height: 48px;
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
         }
-        .notification-bell:hover { background: #334155; }
         .badge {
             position: absolute;
             top: -5px;
@@ -59,14 +148,14 @@
             background: #ef4444;
             color: white;
             border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            font-size: 0.7rem;
+            width: 20px;
+            height: 20px;
+            font-size: 0.65rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
         }
+        
         .account-popup, .notification-popup {
             position: absolute;
             top: 70px;
@@ -80,49 +169,12 @@
             z-index: 1000;
             display: none;
         }
-        .notification-popup {
-            right: 80px;
-            width: 350px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
         .show { display: block; }
-        .notification-popup h4 {
-            margin-bottom: 0.8rem;
-            color: #a78bfa;
-        }
-        .notification-item {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #334155;
-            font-size: 0.85rem;
-        }
-        .notification-item .due-soon { color: #f59e0b; }
-        .notification-item .overdue {
-            color: #ef4444;
-            font-weight: bold;
-        }
-        .no-notifications {
-            color: #94a3b8;
-            text-align: center;
-            padding: 1rem;
-        }
-        .account-popup p { margin: 0.6rem 0; font-size: 0.9rem; word-break: break-word; }
-        .account-popup strong { color: #a78bfa; }
-        .account-popup .logout-btn {
-            width: 100%;
-            margin-top: 1rem;
-            background: #ef4444;
-            border: none;
-            padding: 0.5rem;
-            border-radius: 2rem;
-            color: white;
-            cursor: pointer;
-        }
+        
         .dashboard {
             background: rgba(10,20,35,0.7);
             backdrop-filter: blur(12px);
             border-radius: 1.8rem;
-            border: 1px solid rgba(255,255,255,0.08);
             padding: 1.8rem;
             margin-top: 1rem;
         }
@@ -138,36 +190,23 @@
             width: 100%;
             border-collapse: collapse;
             background: #0f172a80;
-            border-radius: 1rem;
-            overflow: hidden;
             margin-top: 1rem;
         }
-        th { text-align: left; padding: 0.9rem 1rem; background: #1e293b; color: #cbd5e1; }
-        td { padding: 0.8rem 1rem; border-bottom: 1px solid #1e293b; }
+        th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid #1e293b; }
+        th { background: #1e293b; }
         .btn {
             background: #1e293b;
             border: none;
             padding: 0.5rem 1rem;
             border-radius: 2rem;
-            font-weight: 500;
-            color: #e2e8f0;
             cursor: pointer;
-            transition: 0.2s;
-            display: inline-block;
-            text-align: center;
+            margin: 0 0.25rem;
         }
         .btn-primary {
             background: linear-gradient(95deg, #4f46e5, #7c3aed);
             color: white;
         }
         .btn-danger { background: #ef4444; color: white; }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #475569;
-        }
-        .btn-outline:hover { background: #334155; }
-        .msg-success { color: #34d399; margin-top: 0.5rem; display: block; }
-        .msg-error { color: #f87171; margin-top: 0.5rem; display: block; }
         .section { margin-bottom: 2rem; }
     </style>
     <script>
@@ -183,86 +222,179 @@
             var accPopup = document.getElementById('accountPopup');
             if (accPopup) accPopup.classList.remove('show');
         }
+        function showLogoutModal() {
+            var modal = document.getElementById('logoutModal');
+            if (modal) modal.classList.add('show');
+        }
+        function hideLogoutModal() {
+            var modal = document.getElementById('logoutModal');
+            if (modal) modal.classList.remove('show');
+        }
+        function confirmLogout() {
+            hideLogoutModal();
+            __doPostBack('btnProfessionalLogout', '');
+        }
         document.addEventListener('click', function (event) {
             var accPopup = document.getElementById('accountPopup');
             var notifPopup = document.getElementById('notificationPopup');
-            var avatar = document.querySelector('.avatar');
+            var avatar = document.querySelector('.avatar-container');
             var bell = document.querySelector('.notification-bell');
+            var modal = document.getElementById('logoutModal');
             if (accPopup && avatar && !avatar.contains(event.target) && !accPopup.contains(event.target)) {
                 accPopup.classList.remove('show');
             }
             if (notifPopup && bell && !bell.contains(event.target) && !notifPopup.contains(event.target)) {
                 notifPopup.classList.remove('show');
             }
+            if (modal && modal.classList.contains('show') && event.target === modal) {
+                hideLogoutModal();
+            }
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') hideLogoutModal();
         });
     </script>
 </head>
 <body>
-    <form id="form1" runat="server">
-        <div class="container">
-            <div class="header">
-                <h1>🔐 BorrowBox Pro</h1>
-                <p>Invite‑only Access · Admin‑Generated Codes</p>
-            </div>
+<form id="form1" runat="server" enctype="multipart/form-data">
+<div class="container">
+    <div class="header">
+        <h1>🔐 BorrowBox Pro</h1>
+        <p>Student Dashboard</p>
+    </div>
 
-            <!-- Account Popup -->
-            <div id="accountPopup" class="account-popup">
-                <div style="text-align:center; margin-bottom:1rem;">
-                    <uc:ProfilePicture ID="profilePicturePopup" runat="server" />
-                </div>
-                <p><strong>🔑 Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
-                <p><strong>👤 Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
-                <p><strong>📧 Email:</strong> <asp:Label ID="lblPopupEmail" runat="server"></asp:Label></p>
-                <p><strong>🎭 Role:</strong> <asp:Label ID="lblPopupRole" runat="server"></asp:Label></p>
-                <asp:Button ID="btnPopupLogout" runat="server" Text="Logout" CssClass="logout-btn" OnClick="btnLogout_Click" />
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="warning-icon">⚠️</div>
+                <h3>Confirm Logout</h3>
             </div>
-
-            <!-- Notification Popup -->
-            <div id="notificationPopup" class="notification-popup">
-                <asp:Literal ID="litNotificationContent" runat="server"></asp:Literal>
+            <div class="modal-body">
+                <p>Are you sure you want to sign out?</p>
+                <p>You will need to log in again to access your account.</p>
+                <div class="user-info">
+                    <asp:Label ID="lblLogoutUserName" runat="server"></asp:Label>
+                </div>
             </div>
-
-            <!-- Dashboard Content -->
-            <div class="dashboard">
-                <div class="dashboard-header">
-                    <h2>Welcome, <asp:Label ID="lblStudentName" runat="server" style="color:#a78bfa"></asp:Label>!</h2>
-                    <div class="right-icons">
-                        <div class="notification-bell" onclick="toggleNotificationPopup()">
-                            🔔
-                            <asp:Label ID="lblNotificationBadge" runat="server" CssClass="badge" Text="0"></asp:Label>
-                        </div>
-                        <uc:ProfilePicture ID="profilePicture1" runat="server" />
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">📦 Available Equipment</div>
-                    <asp:GridView ID="gvAvailableEquipment" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand">
-                        <Columns>
-                            <asp:BoundField DataField="Name" HeaderText="Item" />
-                            <asp:BoundField DataField="Category" HeaderText="Category" />
-                            <asp:BoundField DataField="Quantity" HeaderText="In Stock" />
-                            <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
-                        </Columns>
-                    </asp:GridView>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">📚 My Borrowed Items</div>
-                    <asp:GridView ID="gvMyBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvMyBorrows_RowCommand">
-                        <Columns>
-                            <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
-                            <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
-                            <asp:BoundField DataField="DueDate" HeaderText="Due Date" />
-                            <asp:BoundField DataField="Status" HeaderText="Status" />
-                            <asp:ButtonField Text="Return" CommandName="Return" ButtonType="Button" ControlStyle-CssClass="btn btn-danger" />
-                        </Columns>
-                    </asp:GridView>
-                </div>
-                
-                <asp:Label ID="lblStudentMessage" runat="server" Visible="false" />
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="hideLogoutModal()">Cancel</button>
+                <button type="button" class="modal-btn modal-btn-confirm" onclick="confirmLogout()">Yes, Sign Out</button>
             </div>
         </div>
-    </form>
+    </div>
+
+    <!-- Account Popup -->
+    <div id="accountPopup" class="account-popup">
+        <div style="text-align:center; margin-bottom:1rem;">
+          
+        </div>
+        <p><strong>🔑 Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
+        <p><strong>👤 Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
+        <p><strong>📧 Email:</strong> <asp:Label ID="lblPopupEmail" runat="server"></asp:Label></p>
+        <p><strong>🎭 Role:</strong> <asp:Label ID="lblPopupRole" runat="server"></asp:Label></p>
+    </div>
+
+    <!-- Notification Popup -->
+    <div id="notificationPopup" class="notification-popup">
+        <asp:Literal ID="litNotificationContent" runat="server"></asp:Literal>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard">
+        <div class="dashboard-header">
+            <h2>Welcome, <asp:Label ID="lblStudentName" runat="server" style="color:#a78bfa"></asp:Label>!</h2>
+            <div class="right-icons">
+                <div class="notification-bell" onclick="toggleNotificationPopup()">
+                    🔔
+                    <asp:Label ID="lblNotificationBadge" runat="server" CssClass="badge" Text="0"></asp:Label>
+                </div>
+                <button type="button" class="logout-btn-professional" onclick="showLogoutModal()">
+                    🚪 Sign Out
+                </button>
+                <div class="avatar-container" onclick="toggleAccountPopup()">
+                  
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Equipment -->
+        <div class="section">
+            <div class="section-title">📦 Available Equipment</div>
+            <asp:GridView ID="gvAvailableEquipment" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand">
+                <Columns>
+                    <asp:BoundField DataField="Name" HeaderText="Item" />
+                    <asp:BoundField DataField="Category" HeaderText="Category" />
+                    <asp:BoundField DataField="Quantity" HeaderText="In Stock" />
+                    <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
+                </Columns>
+                <EmptyDataTemplate>
+                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No equipment available</td></tr>
+                </EmptyDataTemplate>
+            </asp:GridView>
+        </div>
+
+                <!-- Available Equipment with Search -->
+        <div class="section">
+            <div class="section-title">📦 Available Equipment</div>
+    
+            <!-- Search Bar -->
+            <div class="search-container" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <div class="search-box" style="flex: 1; position: relative;">
+                    <asp:TextBox ID="txtSearch" runat="server" placeholder="🔍 Search by name or category..." AutoPostBack="true" OnTextChanged="txtSearch_TextChanged" 
+                        style="width: 100%; padding: 0.8rem 2.5rem 0.8rem 1rem; background: #0f172a; border: 1px solid #334155; border-radius: 2rem; color: white;" />
+                    <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">🔍</span>
+                </div>
+                <div class="filter-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <asp:Button ID="btnAll" runat="server" Text="All" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="All" />
+                    <asp:Button ID="btnElectronics" runat="server" Text="Electronics" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Electronics" />
+                    <asp:Button ID="btnMath" runat="server" Text="Math" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Math" />
+                    <asp:Button ID="btnSports" runat="server" Text="Sports" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Sports" />
+                    <asp:Button ID="btnSupplies" runat="server" Text="Supplies" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Supplies" />
+                </div>
+                <asp:Button ID="btnClear" runat="server" Text="Clear" CssClass="clear-search" OnClick="btnClear_Click" 
+                    style="background: #475569; border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; color: white; cursor: pointer;" />
+            </div>
+            <div class="search-results-count">
+                <asp:Label ID="lblResultsCount" runat="server" Text=""></asp:Label>
+            </div>
+    
+            <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand">
+                <Columns>
+                    <asp:BoundField DataField="Name" HeaderText="Item" />
+                    <asp:BoundField DataField="Category" HeaderText="Category" />
+                    <asp:BoundField DataField="Quantity" HeaderText="In Stock" />
+                    <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
+                </Columns>
+                <EmptyDataTemplate>
+                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No equipment available</td>
+                </EmptyDataTemplate>
+            </asp:GridView>
+        </div>
+
+        <!-- My Borrowed Items -->
+        <div class="section">
+            <div class="section-title">📚 My Borrowed Items</div>
+            <asp:GridView ID="gvMyBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvMyBorrows_RowCommand">
+                <Columns>
+                    <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
+                    <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
+                    <asp:BoundField DataField="DueDate" HeaderText="Due Date" />
+                    <asp:BoundField DataField="Status" HeaderText="Status" />
+                    <asp:ButtonField Text="Return" CommandName="Return" ButtonType="Button" ControlStyle-CssClass="btn btn-danger" />
+                </Columns>
+                <EmptyDataTemplate>
+                    <table><td colspan="5" style="text-align:center; padding:2rem;">📭 You haven't borrowed any items</td></tr>
+                </EmptyDataTemplate>
+            </asp:GridView>
+        </div>
+
+        <asp:Label ID="lblStudentMessage" runat="server" Visible="false" />
+    </div>
+</div>
+
+<asp:Button ID="btnProfessionalLogout" runat="server" style="display:none;" OnClick="btnLogout_Click" />
+
+</form>
 </body>
 </html>

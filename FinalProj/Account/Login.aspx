@@ -13,7 +13,7 @@
             min-height: 100vh;
             padding: 2rem 1rem;
         }
-        .container { max-width: 1300px; margin: 0 auto; position: relative; }
+        .container { max-width: 500px; margin: 0 auto; }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 {
             font-size: 2.8rem;
@@ -24,8 +24,6 @@
         }
         .header p { color: #94a3b8; }
         .card {
-            max-width: 500px;
-            margin: 0 auto;
             background: rgba(15, 25, 45, 0.85);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255,255,255,0.1);
@@ -33,7 +31,12 @@
             padding: 2rem;
             box-shadow: 0 25px 40px rgba(0,0,0,0.4);
         }
-        .card h3 { font-size: 1.6rem; margin-bottom: 1.5rem; color: #c4b5fd; text-align: center; }
+        .card h3 { 
+            font-size: 1.6rem; 
+            margin-bottom: 1.5rem; 
+            color: #c4b5fd; 
+            text-align: center; 
+        }
         input {
             width: 100%;
             padding: 0.8rem 1rem;
@@ -77,7 +80,15 @@
             font-size: 0.9rem;
         }
         .link-btn:hover { color: #c4b5fd; }
-        .msg-error { color: #f87171; margin-top: 0.5rem; display: block; text-align: center; }
+        .msg-error { 
+            color: #f87171; 
+            margin-top: 1rem; 
+            padding: 0.75rem;
+            background: rgba(248, 113, 113, 0.1);
+            border-radius: 0.5rem;
+            text-align: center;
+            display: block; 
+        }
         .text-center { text-align: center; margin-top: 1rem; }
     </style>
 </head>
@@ -86,11 +97,11 @@
         <div class="container">
             <div class="header">
                 <h1>🔐 BorrowBox Pro</h1>
-                <p>Invite‑only Access · Admin‑Generated Codes</p>
+                <p>Login to Your Account</p>
             </div>
 
             <div class="card">
-                <h3>Login to Your Account</h3>
+                <h3>Login</h3>
                 <asp:TextBox ID="txtLoginEmail" runat="server" placeholder="Email address"></asp:TextBox>
                 <asp:TextBox ID="txtLoginPassword" runat="server" TextMode="Password" placeholder="Password"></asp:TextBox>
                 <asp:Button ID="btnLogin" runat="server" Text="Login →" CssClass="btn btn-primary" OnClick="btnLogin_Click" />
@@ -99,7 +110,7 @@
                     &nbsp;|&nbsp;
                     <asp:HyperLink ID="lnkSignup" runat="server" Text="Create Account" NavigateUrl="~/Account/Signup.aspx" CssClass="link-btn" />
                 </div>
-                <asp:Label ID="lblLoginMessage" runat="server" CssClass="msg-error"></asp:Label>
+                <asp:Label ID="lblLoginMessage" runat="server" CssClass="msg-error" Visible="false"></asp:Label>
             </div>
         </div>
     </form>

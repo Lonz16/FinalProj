@@ -6,18 +6,36 @@ namespace CanteenProject.Student
 {
     public partial class Dashboard : BasePage
     {
+        // Store current filter and search text
+        private string CurrentCategoryFilter
+        {
+            get { return ViewState["CurrentCategoryFilter"] as string ?? "All"; }
+            set { ViewState["CurrentCategoryFilter"] = value; }
+        }
+
+        private string CurrentSearchText
+        {
+            get { return ViewState["CurrentSearchText"] as string ?? ""; }
+            set { ViewState["CurrentSearchText"] = value; }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
+                string userEmail = Session["LoggedInUser"].ToString();
+
+             
+                // Set logout user info
+                var user = GetCurrentUser();
+                if (user != null)
+                {
+                    lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
+                }
+
                 LoadUserInfo();
                 LoadStudentDashboard();
                 UpdateNotificationBadge();
-
-                // Set UserEmail for profile picture controls
-                string userEmail = Session["LoggedInUser"].ToString();
-                profilePicture1.UserEmail = userEmail;
-                profilePicturePopup.UserEmail = userEmail;
             }
         }
 
@@ -36,50 +54,75 @@ namespace CanteenProject.Student
 
         private void LoadStudentDashboard()
         {
-            // Available equipment (stock > 0)
-            gvAvailableEquipment.DataSource = AppData.EquipmentList
-                .Where(eq => eq.Quantity > 0).ToList();
-            gvAvailableEquipment.DataBind();
+            LoadAvailableEquipment();
+            LoadMyBorrows();
+        }
 
-            // Student's own active borrows
+        private void LoadAvailableEquipment()
+        {
+            // Start with all equipment that has stock
+            var equipment = AppData.EquipmentList.Where(eq => eq.Quantity > 0).AsQueryable();
+
+            // Apply category filter
+            if (CurrentCategoryFilter != "All")
+            {
+                equipment = equipment.Where(eq => eq.Category == CurrentCategoryFilter);
+            }
+
+            // Apply search filter (search by name or category)
+            if (!string.IsNullOrEmpty(CurrentSearchText))
+            {
+                string searchLower = CurrentSearchText.ToLower();
+                equipment = equipment.Where(eq =>
+                    eq.Name.ToLower().Contains(searchLower) ||
+                    eq.Category.ToLower().Contains(searchLower));
+            }
+
+            var filteredList = equipment.ToList();
+
+            // Update results count
+            lblResultsCount.Text = $"Showing {filteredList.Count} item(s)";
+
+            // Bind to grid
+            gvAvailableEquipment.DataSource = filteredList;
+            gvAvailableEquipment.DataBind();
+        }
+
+        private void LoadMyBorrows()
+        {
             string studentEmail = Session["LoggedInUser"].ToString();
-            var activeBorrows = AppData.BorrowRecords
-                .Where(b => b.StudentEmail == studentEmail && b.Status == "Borrowed")
-                .ToList();
-            gvMyBorrows.DataSource = activeBorrows;
+            gvMyBorrows.DataSource = AppData.BorrowRecords
+                .Where(b => b.StudentEmail == studentEmail && b.Status == "Borrowed").ToList();
             gvMyBorrows.DataBind();
         }
 
-        // Helper method to get CSS class for due date
-        protected string GetDueDateClass(string dueDate)
+        private void HighlightActiveFilter()
         {
-            if (DateTime.TryParse(dueDate, out DateTime due))
-            {
-                int daysLeft = (due - DateTime.Now).Days;
-                if (daysLeft < 0) return "overdue";
-                if (daysLeft <= 3) return "due-soon";
-            }
-            return "";
-        }
+            // Reset all button styles
+            btnAll.CssClass = "filter-btn";
+            btnElectronics.CssClass = "filter-btn";
+            btnMath.CssClass = "filter-btn";
+            btnSports.CssClass = "filter-btn";
+            btnSupplies.CssClass = "filter-btn";
 
-        // Apply row styling based on due date
-        protected void gvMyBorrows_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType == DataControlRowType.DataRow)
+            // Highlight active button
+            switch (CurrentCategoryFilter)
             {
-                var borrow = (BorrowRecord)e.Row.DataItem;
-                if (DateTime.TryParse(borrow.DueDate, out DateTime dueDate))
-                {
-                    int daysLeft = (dueDate - DateTime.Now).Days;
-                    if (daysLeft < 0)
-                    {
-                        e.Row.CssClass = "overdue-row";
-                    }
-                    else if (daysLeft <= 3)
-                    {
-                        e.Row.CssClass = "due-soon-row";
-                    }
-                }
+                case "All":
+                    btnAll.CssClass = "filter-btn active";
+                    break;
+                case "Electronics":
+                    btnElectronics.CssClass = "filter-btn active";
+                    break;
+                case "Math":
+                    btnMath.CssClass = "filter-btn active";
+                    break;
+                case "Sports":
+                    btnSports.CssClass = "filter-btn active";
+                    break;
+                case "Supplies":
+                    btnSupplies.CssClass = "filter-btn active";
+                    break;
             }
         }
 
@@ -107,7 +150,6 @@ namespace CanteenProject.Student
 
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
 
-            // Generate notification HTML
             var html = new System.Text.StringBuilder();
             if (count == 0)
             {
@@ -130,15 +172,59 @@ namespace CanteenProject.Student
             litNotificationContent.Text = html.ToString();
         }
 
+        // Search text changed - triggers auto-search
+        protected void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+            CurrentSearchText = txtSearch.Text.Trim();
+            LoadAvailableEquipment();
+        }
+
+        // Filter button click
+        protected void btnFilter_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            CurrentCategoryFilter = btn.CommandArgument;
+            HighlightActiveFilter();
+            LoadAvailableEquipment();
+        }
+
+        // Clear all filters
+        protected void btnClear_Click(object sender, EventArgs e)
+        {
+            CurrentCategoryFilter = "All";
+            CurrentSearchText = "";
+            txtSearch.Text = "";
+            HighlightActiveFilter();
+            LoadAvailableEquipment();
+        }
+
         protected void gvAvailableEquipment_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName != "Borrow") return;
 
             int rowIndex = Convert.ToInt32(e.CommandArgument);
-            var available = AppData.EquipmentList.Where(eq => eq.Quantity > 0).ToList();
-            if (rowIndex < 0 || rowIndex >= available.Count) return;
 
-            var equip = available[rowIndex];
+            // Get the currently filtered list
+            var equipment = AppData.EquipmentList.Where(eq => eq.Quantity > 0).AsQueryable();
+
+            if (CurrentCategoryFilter != "All")
+            {
+                equipment = equipment.Where(eq => eq.Category == CurrentCategoryFilter);
+            }
+
+            if (!string.IsNullOrEmpty(CurrentSearchText))
+            {
+                string searchLower = CurrentSearchText.ToLower();
+                equipment = equipment.Where(eq =>
+                    eq.Name.ToLower().Contains(searchLower) ||
+                    eq.Category.ToLower().Contains(searchLower));
+            }
+
+            var filteredList = equipment.ToList();
+
+            if (rowIndex < 0 || rowIndex >= filteredList.Count) return;
+
+            var equip = filteredList[rowIndex];
             string studentEmail = Session["LoggedInUser"].ToString();
             string studentName = Session["UserName"].ToString();
 
@@ -156,7 +242,7 @@ namespace CanteenProject.Student
                 return;
             }
 
-            // Check if already borrowed (not returned yet)
+            // Check if already borrowed
             bool alreadyBorrowed = AppData.BorrowRecords.Any(b =>
                 b.StudentEmail == studentEmail &&
                 b.EquipmentID == equip.EquipmentID &&
@@ -164,7 +250,7 @@ namespace CanteenProject.Student
 
             if (alreadyBorrowed)
             {
-                lblStudentMessage.Text = $"⚠️ You already have '{equip.Name}' borrowed. Please return it before requesting again.";
+                lblStudentMessage.Text = $"⚠️ You already have '{equip.Name}' borrowed.";
                 lblStudentMessage.CssClass = "msg-error";
                 lblStudentMessage.Visible = true;
                 return;
@@ -187,11 +273,13 @@ namespace CanteenProject.Student
             lblStudentMessage.Text = $"✅ Request for '{equip.Name}' sent to teacher.";
             lblStudentMessage.CssClass = "msg-success";
             lblStudentMessage.Visible = true;
-            LoadStudentDashboard();
+            LoadAvailableEquipment(); // Refresh the filtered list
         }
 
         protected void gvMyBorrows_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (e.CommandName != "Return") return;
+
             int rowIndex = Convert.ToInt32(e.CommandArgument);
             string email = Session["LoggedInUser"].ToString();
             var myBorrows = AppData.BorrowRecords
@@ -200,46 +288,22 @@ namespace CanteenProject.Student
             if (rowIndex < 0 || rowIndex >= myBorrows.Count) return;
             var borrow = myBorrows[rowIndex];
 
-            if (e.CommandName == "Return")
-            {
-                // Return the item
-                borrow.Status = "Returned";
-                borrow.ReturnDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+            borrow.Status = "Returned";
+            borrow.ReturnDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
 
-                var equip = AppData.EquipmentList.FirstOrDefault(eq => eq.EquipmentID == borrow.EquipmentID);
-                if (equip != null) equip.Quantity++;
+            var equip = AppData.EquipmentList.FirstOrDefault(eq => eq.EquipmentID == borrow.EquipmentID);
+            if (equip != null) equip.Quantity++;
 
-                AddActivityLog(email, Session["UserName"].ToString(), "Student", "Return Item", $"Returned '{borrow.EquipmentName}'");
+            AddActivityLog(email, Session["UserName"].ToString(), "Student", "Return Item", $"Returned '{borrow.EquipmentName}'");
 
-                lblStudentMessage.Text = $"✅ '{borrow.EquipmentName}' returned successfully.";
-                lblStudentMessage.CssClass = "msg-success";
-            }
-            else if (e.CommandName == "Extend")
-            {
-                // Extend the borrow period by 7 days
-                if (DateTime.TryParse(borrow.DueDate, out DateTime currentDueDate))
-                {
-                    DateTime newDueDate = currentDueDate.AddDays(7);
-                    borrow.DueDate = newDueDate.ToString("yyyy-MM-dd");
-
-                    AddActivityLog(email, Session["UserName"].ToString(), "Student", "Extend Borrow",
-                        $"Extended '{borrow.EquipmentName}' until {borrow.DueDate}");
-
-                    lblStudentMessage.Text = $"✅ '{borrow.EquipmentName}' due date extended to {borrow.DueDate}.";
-                    lblStudentMessage.CssClass = "msg-success";
-                }
-                else
-                {
-                    lblStudentMessage.Text = $"❌ Could not extend '{borrow.EquipmentName}'. Invalid due date format.";
-                    lblStudentMessage.CssClass = "msg-error";
-                }
-            }
-
+            lblStudentMessage.Text = $"✅ '{borrow.EquipmentName}' returned successfully.";
+            lblStudentMessage.CssClass = "msg-success";
             lblStudentMessage.Visible = true;
             LoadStudentDashboard();
             UpdateNotificationBadge();
         }
 
+        // SINGLE logout method - uses BasePage.Logout()
         protected void btnLogout_Click(object sender, EventArgs e)
         {
             Logout();

@@ -24,41 +24,40 @@ namespace CanteenProject.Account
             // Validation
             if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                lblSignupMessage.Text = "❌ All fields are required.";
-                lblSignupMessage.CssClass = "msg-error";
+                ShowMessage("❌ All fields are required.", "msg-error");
                 return;
             }
 
             if (password.Length < 6)
             {
-                lblSignupMessage.Text = "❌ Password must be at least 6 characters.";
-                lblSignupMessage.CssClass = "msg-error";
+                ShowMessage("❌ Password must be at least 6 characters.", "msg-error");
                 return;
             }
 
             if (AppData.Users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
             {
-                lblSignupMessage.Text = "❌ An account with that email already exists.";
-                lblSignupMessage.CssClass = "msg-error";
+                ShowMessage("❌ An account with that email already exists.", "msg-error");
                 return;
             }
 
-            // Invite code check for Students and Teachers
-            if (role == "Student" || role == "Teacher")
+            // Invite code is required for Students and Teachers
+            if (string.IsNullOrEmpty(inviteCode))
             {
-                bool validCode = AppData.Users.Any(u =>
-                    u.Role == "Admin" && u.InviteCode == inviteCode);
-
-                if (!validCode)
-                {
-                    lblSignupMessage.Text = "❌ Invalid invite code. Please ask an Admin for their invite code.";
-                    lblSignupMessage.CssClass = "msg-error";
-                    return;
-                }
+                ShowMessage("❌ Invite code is required. Please ask an Admin.", "msg-error");
+                return;
             }
 
-            // Create new user
-            string newInviteCode = (role == "Admin") ? GenerateInviteCode() : null;
+            // Verify invite code from an Admin
+            bool validCode = AppData.Users.Any(u =>
+                u.Role == "Admin" && u.InviteCode == inviteCode);
+
+            if (!validCode)
+            {
+                ShowMessage("❌ Invalid invite code. Please ask an Admin for the correct code.", "msg-error");
+                return;
+            }
+
+            // Create new user (Student or Teacher only)
             var newUser = new User
             {
                 UserID = AppData.NextUserID,
@@ -67,24 +66,30 @@ namespace CanteenProject.Account
                 Email = email,
                 PasswordHash = HashPassword(password),
                 Role = role,
-                InviteCode = newInviteCode,
-                InvitedByAdminCode = (role != "Admin") ? inviteCode : null
+                InviteCode = null,
+                InvitedByAdminCode = inviteCode
             };
 
             AppData.Users.Add(newUser);
             AppData.NextUserID++;
 
             AddActivityLog(newUser.Email, newUser.FullName, newUser.Role, "Register",
-                           $"New {role} account created.");
+                           $"New {role} account created using invite code from Admin.");
 
-            lblSignupMessage.Text = "✅ Account created successfully! You can now log in.";
-            lblSignupMessage.CssClass = "msg-success";
+            ShowMessage("✅ Account created successfully! You can now log in.", "msg-success");
 
             // Clear fields
             txtSignupName.Text = "";
             txtSignupEmail.Text = "";
             txtSignupPassword.Text = "";
             txtInviteCode.Text = "";
+        }
+
+        private void ShowMessage(string message, string cssClass)
+        {
+            lblSignupMessage.Text = message;
+            lblSignupMessage.CssClass = cssClass;
+            lblSignupMessage.Visible = true;
         }
     }
 }

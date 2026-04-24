@@ -1,8 +1,9 @@
 ﻿<%@ Control Language="C#" AutoEventWireup="true" CodeBehind="ProfilePicture.ascx.cs" Inherits="CanteenProject.Shared.ProfilePicture" %>
+
 <style>
     .profile-container {
         text-align: center;
-        padding: 0.5rem;
+        padding: 0;
     }
     .profile-image-container {
         position: relative;
@@ -10,8 +11,8 @@
         cursor: pointer;
     }
     .profile-img {
-        width: 48px;
-        height: 48px;
+        width: 42px;
+        height: 42px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid #4f46e5;
@@ -24,16 +25,16 @@
     }
     .camera-icon {
         position: absolute;
-        bottom: 0px;
-        right: 0px;
+        bottom: 0;
+        right: 0;
         background: #4f46e5;
         border-radius: 50%;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.7rem;
+        font-size: 0.6rem;
         border: 2px solid #0f172a;
         cursor: pointer;
         transition: 0.2s;
@@ -145,7 +146,6 @@
         if (modal) {
             modal.style.display = 'none';
         }
-        // Clear the file input and preview
         var fileInput = document.querySelector('#<%= fileUpload.ClientID %>');
         if (fileInput) {
             fileInput.value = '';
@@ -156,7 +156,6 @@
         }
     }
 
-    // Preview image before upload
     function setupPreview() {
         var fileInput = document.querySelector('#<%= fileUpload.ClientID %>');
         if (fileInput) {
@@ -175,7 +174,6 @@
         }
     }
 
-    // Close modal when clicking outside
     window.onclick = function (event) {
         const modal = document.getElementById('uploadModal');
         if (event.target === modal) {
@@ -183,7 +181,6 @@
         }
     }
 
-    // Initialize
     document.addEventListener('DOMContentLoaded', function () {
         setupPreview();
     });

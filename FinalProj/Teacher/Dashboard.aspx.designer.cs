@@ -24,6 +24,15 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.HtmlControls.HtmlForm form1;
 
         /// <summary>
+        /// lblLogoutUserName control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblLogoutUserName;
+
+        /// <summary>
         /// lblPopupPermanentID control.
         /// </summary>
         /// <remarks>
@@ -60,15 +69,6 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.Label lblPopupRole;
 
         /// <summary>
-        /// btnPopupLogout control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnPopupLogout;
-
-        /// <summary>
         /// litNotificationContent control.
         /// </summary>
         /// <remarks>
@@ -96,13 +96,22 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.Label lblNotificationBadge;
 
         /// <summary>
-        /// profilePicture1 control.
+        /// txtPendingSearch control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.UserControl profilePicture1;
+        protected global::System.Web.UI.WebControls.TextBox txtPendingSearch;
+
+        /// <summary>
+        /// btnClearPending control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnClearPending;
 
         /// <summary>
         /// lblPendingCount control.
@@ -123,6 +132,33 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.GridView gvPendingRequests;
 
         /// <summary>
+        /// txtActiveSearch control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtActiveSearch;
+
+        /// <summary>
+        /// btnClearActive control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnClearActive;
+
+        /// <summary>
+        /// lblActiveCount control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblActiveCount;
+
+        /// <summary>
         /// gvActiveBorrows control.
         /// </summary>
         /// <remarks>
@@ -139,5 +175,14 @@ namespace CanteenProject.Teacher
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label lblTeacherMessage;
+
+        /// <summary>
+        /// btnProfessionalLogout control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnProfessionalLogout;
     }
 }

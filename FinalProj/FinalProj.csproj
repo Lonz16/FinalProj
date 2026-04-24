@@ -67,7 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Account\forget_Password.aspx" />
+    <Content Include="Account\ForgotPassword.aspx" />
     <Content Include="Account\Login.aspx" />
     <Content Include="Account\Signup.aspx" />
     <Content Include="Admin\ActivityLog.aspx" />
@@ -76,9 +76,10 @@
     <Content Include="Admin\ManageEquipment.aspx" />
     <Content Include="Admin\ManageUsers.aspx" />
     <Content Include="App_Code\AppData.aspx" />
-    <Content Include="App_Code\BasePage.aspx" />
+    <Content Include="Admin\BasePage.aspx" />
     <Content Include="App_Code\Model.aspx" />
-    <Content Include="Image\ProfilePicture.aspx" />
+    <Content Include="CreateDefaultImages.aspx" />
+    <Content Include="Shared\ProfilePicture.aspx" />
     <Content Include="Shared\Style.css" />
     <Content Include="Student\AvailableEquipment.aspx" />
     <Content Include="Student\Dashboard.aspx" />
@@ -89,12 +90,12 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Account\forget_Password.aspx.cs">
-      <DependentUpon>forget_Password.aspx</DependentUpon>
+    <Compile Include="Account\ForgotPassword.aspx.cs">
+      <DependentUpon>ForgotPassword.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Account\forget_Password.aspx.designer.cs">
-      <DependentUpon>forget_Password.aspx</DependentUpon>
+    <Compile Include="Account\ForgotPassword.aspx.designer.cs">
+      <DependentUpon>ForgotPassword.aspx</DependentUpon>
     </Compile>
     <Compile Include="Account\Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>
@@ -151,11 +152,11 @@
     <Compile Include="App_Code\AppData.aspx.designer.cs">
       <DependentUpon>AppData.aspx</DependentUpon>
     </Compile>
-    <Compile Include="App_Code\BasePage.aspx.cs">
+    <Compile Include="Admin\BasePage.aspx.cs">
       <DependentUpon>BasePage.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="App_Code\BasePage.aspx.designer.cs">
+    <Compile Include="Admin\BasePage.aspx.designer.cs">
       <DependentUpon>BasePage.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Code\Model.aspx.cs">
@@ -164,14 +165,17 @@
     <Compile Include="App_Code\Model.aspx.designer.cs">
       <DependentUpon>Model.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Image\ProfilePicture.aspx.cs">
+    <Compile Include="CreateDefaultImages.aspx.designer.cs">
+      <DependentUpon>CreateDefaultImages.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Shared\ProfilePicture.aspx.cs">
       <DependentUpon>ProfilePicture.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Image\ProfilePicture.aspx.designer.cs">
+    <Compile Include="Shared\ProfilePicture.aspx.designer.cs">
       <DependentUpon>ProfilePicture.aspx</DependentUpon>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Student\AvailableEquipment.aspx.cs">
       <DependentUpon>AvailableEquipment.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

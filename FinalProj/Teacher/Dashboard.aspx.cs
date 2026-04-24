@@ -6,10 +6,27 @@ namespace CanteenProject.Teacher
 {
     public partial class Dashboard : BasePage
     {
+        // Pending requests search
+        private string PendingSearchText
+        {
+            get { return ViewState["PendingSearchText"] as string ?? ""; }
+            set { ViewState["PendingSearchText"] = value; }
+        }
+
+        // Active borrows search
+        private string ActiveSearchText
+        {
+            get { return ViewState["ActiveSearchText"] as string ?? ""; }
+            set { ViewState["ActiveSearchText"] = value; }
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
+                string userEmail = Session["LoggedInUser"].ToString();
+
+
                 LoadUserInfo();
                 LoadTeacherDashboard();
                 UpdateNotificationBadge();
@@ -26,25 +43,78 @@ namespace CanteenProject.Teacher
                 lblPopupName.Text = user.FullName;
                 lblPopupEmail.Text = user.Email;
                 lblPopupRole.Text = user.Role;
+                lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
             }
         }
 
         private void LoadTeacherDashboard()
         {
-            // Pending requests
-            var pendingRequests = AppData.BorrowRequests
-                .Where(r => r.Status == "Pending").ToList();
-            gvPendingRequests.DataSource = pendingRequests;
-            gvPendingRequests.DataBind();
-            lblPendingCount.Text = pendingRequests.Count.ToString();
+            LoadPendingRequests();
+            LoadActiveBorrows();
+        }
 
-            // Active borrows (show last 10)
-            gvActiveBorrows.DataSource = AppData.BorrowRecords
-                .Where(b => b.Status == "Borrowed")
-                .OrderByDescending(b => b.BorrowDate)
-                .Take(10)
-                .ToList();
+        private void LoadPendingRequests()
+        {
+            var pending = AppData.BorrowRequests.Where(r => r.Status == "Pending").AsQueryable();
+
+            if (!string.IsNullOrEmpty(PendingSearchText))
+            {
+                string searchLower = PendingSearchText.ToLower();
+                pending = pending.Where(r =>
+                    r.StudentName.ToLower().Contains(searchLower) ||
+                    r.EquipmentName.ToLower().Contains(searchLower));
+            }
+
+            var pendingList = pending.OrderBy(r => r.RequestDate).ToList();
+            gvPendingRequests.DataSource = pendingList;
+            gvPendingRequests.DataBind();
+
+            lblPendingCount.Text = $"Showing {pendingList.Count} pending request(s)";
+        }
+
+        private void LoadActiveBorrows()
+        {
+            var active = AppData.BorrowRecords.Where(b => b.Status == "Borrowed").AsQueryable();
+
+            if (!string.IsNullOrEmpty(ActiveSearchText))
+            {
+                string searchLower = ActiveSearchText.ToLower();
+                active = active.Where(b =>
+                    b.StudentName.ToLower().Contains(searchLower) ||
+                    b.EquipmentName.ToLower().Contains(searchLower));
+            }
+
+            var activeList = active.OrderBy(b => b.DueDate).ToList();
+            gvActiveBorrows.DataSource = activeList;
             gvActiveBorrows.DataBind();
+
+            lblActiveCount.Text = $"Showing {activeList.Count} active borrow(s)";
+        }
+
+        protected void txtPendingSearch_TextChanged(object sender, EventArgs e)
+        {
+            PendingSearchText = txtPendingSearch.Text.Trim();
+            LoadPendingRequests();
+        }
+
+        protected void btnClearPending_Click(object sender, EventArgs e)
+        {
+            PendingSearchText = "";
+            txtPendingSearch.Text = "";
+            LoadPendingRequests();
+        }
+
+        protected void txtActiveSearch_TextChanged(object sender, EventArgs e)
+        {
+            ActiveSearchText = txtActiveSearch.Text.Trim();
+            LoadActiveBorrows();
+        }
+
+        protected void btnClearActive_Click(object sender, EventArgs e)
+        {
+            ActiveSearchText = "";
+            txtActiveSearch.Text = "";
+            LoadActiveBorrows();
         }
 
         private void UpdateNotificationBadge()
@@ -68,7 +138,6 @@ namespace CanteenProject.Teacher
 
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
 
-            // Generate notification HTML
             var html = new System.Text.StringBuilder();
             if (count == 0)
             {
@@ -134,7 +203,7 @@ namespace CanteenProject.Teacher
                     lblTeacherMessage.CssClass = "msg-error";
                 }
             }
-            else // Deny
+            else
             {
                 request.Status = "Denied";
                 AddActivityLog(teacherEmail, teacherName, "Teacher", "Deny Request",
@@ -153,8 +222,7 @@ namespace CanteenProject.Teacher
             if (e.CommandName != "MarkReturned") return;
 
             int rowIndex = Convert.ToInt32(e.CommandArgument);
-            var activeBorrows = AppData.BorrowRecords.Where(b => b.Status == "Borrowed")
-                .OrderByDescending(b => b.BorrowDate).Take(10).ToList();
+            var activeBorrows = AppData.BorrowRecords.Where(b => b.Status == "Borrowed").ToList();
             if (rowIndex < 0 || rowIndex >= activeBorrows.Count) return;
 
             var borrow = activeBorrows[rowIndex];
@@ -164,11 +232,8 @@ namespace CanteenProject.Teacher
             var equip = AppData.EquipmentList.FirstOrDefault(eq => eq.EquipmentID == borrow.EquipmentID);
             if (equip != null) equip.Quantity++;
 
-            string teacherEmail = Session["LoggedInUser"].ToString();
-            string teacherName = Session["UserName"].ToString();
-            AddActivityLog(teacherEmail, teacherName, "Teacher", "Mark Returned",
-                           $"Marked '{borrow.EquipmentName}' returned by {borrow.StudentName}");
-
+            AddActivityLog(Session["LoggedInUser"].ToString(), Session["UserName"].ToString(),
+                           "Teacher", "Mark Returned", $"Marked '{borrow.EquipmentName}' returned by {borrow.StudentName}");
             lblTeacherMessage.Text = $"✅ '{borrow.EquipmentName}' marked as returned by {borrow.StudentName}.";
             lblTeacherMessage.CssClass = "msg-success";
             lblTeacherMessage.Visible = true;
@@ -176,6 +241,7 @@ namespace CanteenProject.Teacher
             UpdateNotificationBadge();
         }
 
+        // Single logout method - uses BasePage.Logout()
         protected void btnLogout_Click(object sender, EventArgs e)
         {
             Logout();

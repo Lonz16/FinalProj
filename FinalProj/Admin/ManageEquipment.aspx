@@ -13,7 +13,7 @@
             min-height: 100vh;
             padding: 2rem 1rem;
         }
-        .container { max-width: 1300px; margin: 0 auto; }
+        .container { max-width: 1400px; margin: 0 auto; }
         .header { text-align: center; margin-bottom: 2rem; }
         .header h1 {
             font-size: 2.8rem;
@@ -52,6 +52,37 @@
             border-bottom: 2px solid #334155;
             display: inline-block;
         }
+        .add-form {
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+        }
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .form-row input, .form-row textarea, .form-row select {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.7rem;
+            border-radius: 0.5rem;
+            color: white;
+        }
+        .form-row textarea {
+            min-width: 100%;
+            resize: vertical;
+        }
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -62,8 +93,15 @@
             padding: 0.8rem 1rem;
             text-align: left;
             border-bottom: 1px solid #1e293b;
+            vertical-align: middle;
         }
         th { background: #1e293b; }
+        .equipment-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
         .btn {
             border: none;
             padding: 0.5rem 1rem;
@@ -78,30 +116,12 @@
         .btn-success { background: #10b981; color: white; }
         .btn-danger { background: #ef4444; color: white; }
         .btn-warning { background: #f59e0b; color: white; }
-        .add-form {
-            background: #1e293b;
-            padding: 1rem;
-            border-radius: 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .add-form input {
-            background: #0f172a;
-            border: 1px solid #334155;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            color: white;
-            flex: 1;
-        }
         .msg-success { color: #34d399; margin-top: 0.5rem; display: block; }
         .msg-error { color: #f87171; margin-top: 0.5rem; display: block; }
     </style>
 </head>
 <body>
-    <form id="form1" runat="server">
+    <form id="form1" runat="server" enctype="multipart/form-data">
         <div class="container">
             <div class="header">
                 <h1>🔐 BorrowBox Pro</h1>
@@ -118,33 +138,47 @@
             </div>
             
             <div class="dashboard">
+                <!-- Add Equipment Form with Image Upload -->
                 <div class="section-title">➕ Add New Equipment</div>
                 <div class="add-form">
-                    <asp:TextBox ID="txtEquipName" runat="server" placeholder="Equipment Name"></asp:TextBox>
-                    <asp:TextBox ID="txtCategory" runat="server" placeholder="Category"></asp:TextBox>
-                    <asp:TextBox ID="txtQuantity" runat="server" placeholder="Quantity" TextMode="Number"></asp:TextBox>
-                    <asp:Button ID="btnAddEquipment" runat="server" Text="Add Equipment" CssClass="btn btn-primary" OnClick="btnAddEquipment_Click" />
+                    <div class="form-row">
+                        <asp:TextBox ID="txtEquipName" runat="server" placeholder="Equipment Name" />
+                        <asp:TextBox ID="txtCategory" runat="server" placeholder="Category" />
+                        <asp:TextBox ID="txtQuantity" runat="server" placeholder="Quantity" TextMode="Number" />
+                    </div>
+                    <div class="form-row">
+                        <asp:TextBox ID="txtDescription" runat="server" placeholder="Description (optional)" TextMode="MultiLine" Rows="2" />
+                    </div>
+                    <div class="form-row">
+                        <asp:FileUpload ID="fileEquipmentImage" runat="server" Accept="image/jpeg,image/png,image/jpg,image/gif" />
+                        <asp:Button ID="btnAddEquipment" runat="server" Text="Add Equipment" CssClass="btn btn-primary" OnClick="btnAddEquipment_Click" />
+                    </div>
+                    <asp:Label ID="lblAddMessage" runat="server" />
                 </div>
-                <asp:Label ID="lblAddMessage" runat="server" />
                 
-                <div class="section-title" style="margin-top: 2rem;">📦 Equipment Inventory</div>
+                <!-- Equipment List with Images -->
+                <div class="section-title">📦 Equipment Inventory</div>
                 <asp:GridView ID="gvEquipment" runat="server" AutoGenerateColumns="False" DataKeyNames="EquipmentID"
                     OnRowEditing="gvEquipment_RowEditing" OnRowCancelingEdit="gvEquipment_RowCancelingEdit"
                     OnRowUpdating="gvEquipment_RowUpdating" OnRowCommand="gvEquipment_RowCommand">
                     <Columns>
-                        <asp:BoundField DataField="Name" HeaderText="Name" />
-                        <asp:BoundField DataField="Category" HeaderText="Category" />
-                        <asp:TemplateField HeaderText="Quantity">
-                            <ItemTemplate><%# Eval("Quantity") %></ItemTemplate>
+                        <asp:TemplateField HeaderText="Image">
+                            <ItemTemplate>
+                                <asp:Image ID="imgEquip" runat="server" 
+                                    ImageUrl='<%# string.IsNullOrEmpty(Eval("ImageUrl").ToString()) ? "~/Images/equipment/default-equipment.png" : Eval("ImageUrl") %>' 
+                                    CssClass="equipment-img" />
+                            </ItemTemplate>
                             <EditItemTemplate>
-                                <asp:TextBox ID="txtEditQty" runat="server" Text='<%# Eval("Quantity") %>' TextMode="Number" Width="80px" />
+                                <asp:FileUpload ID="fileEditImage" runat="server" />
+                                <asp:HiddenField ID="hdnCurrentImage" runat="server" Value='<%# Eval("ImageUrl") %>' />
                             </EditItemTemplate>
                         </asp:TemplateField>
+                        <asp:BoundField DataField="Name" HeaderText="Name" />
+                        <asp:BoundField DataField="Category" HeaderText="Category" />
+                        <asp:BoundField DataField="Quantity" HeaderText="Quantity" />
+                        <asp:BoundField DataField="Description" HeaderText="Description" />
                         <asp:CommandField ShowEditButton="True" ShowDeleteButton="True" />
                     </Columns>
-                    <EmptyDataTemplate>
-                        <tr><td colspan="4" style="text-align:center; padding:2rem;">No equipment found</td></tr>
-                    </EmptyDataTemplate>
                 </asp:GridView>
             </div>
         </div>

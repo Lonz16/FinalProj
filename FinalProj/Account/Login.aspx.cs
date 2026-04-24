@@ -39,6 +39,7 @@ namespace CanteenProject.Account
             else
             {
                 lblLoginMessage.Text = "❌ Invalid email or password.";
+                lblLoginMessage.Visible = true;
             }
         }
 

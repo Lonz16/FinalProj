@@ -60,15 +60,6 @@ namespace CanteenProject.Admin
         protected global::System.Web.UI.WebControls.Label lblPopupRole;
 
         /// <summary>
-        /// btnPopupLogout control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnPopupLogout;
-
-        /// <summary>
         /// litNotificationContent control.
         /// </summary>
         /// <remarks>
@@ -141,13 +132,94 @@ namespace CanteenProject.Admin
         protected global::System.Web.UI.WebControls.Label lblAdminInviteCode;
 
         /// <summary>
-        /// gvRecentActivity control.
+        /// txtActivitySearch control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.GridView gvRecentActivity;
+        protected global::System.Web.UI.WebControls.TextBox txtActivitySearch;
+
+        /// <summary>
+        /// btnAllActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAllActions;
+
+        /// <summary>
+        /// btnLoginActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLoginActions;
+
+        /// <summary>
+        /// btnLogoutActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnLogoutActions;
+
+        /// <summary>
+        /// btnRegisterActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnRegisterActions;
+
+        /// <summary>
+        /// btnBorrowActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnBorrowActions;
+
+        /// <summary>
+        /// btnReturnActions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnReturnActions;
+
+        /// <summary>
+        /// btnClearActivity control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnClearActivity;
+
+        /// <summary>
+        /// lblActivityCount control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblActivityCount;
+
+        /// <summary>
+        /// gvActivityLog control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvActivityLog;
 
         /// <summary>
         /// lblAdminMessage control.
@@ -157,5 +229,14 @@ namespace CanteenProject.Admin
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label lblAdminMessage;
+
+        /// <summary>
+        /// btnProfessionalLogout control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnProfessionalLogout;
     }
 }
