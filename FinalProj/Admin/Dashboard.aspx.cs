@@ -1,38 +1,26 @@
 ﻿using System;
 using System.Linq;
-using System.Web.UI;
 using System.Web.UI.WebControls;
 
 namespace CanteenProject.Admin
 {
     public partial class Dashboard : BasePage
     {
-        private string ActivitySearchText
+        private string UnifiedSearchText
         {
-            get { return ViewState["ActivitySearchText"] as string ?? ""; }
-            set { ViewState["ActivitySearchText"] = value; }
-        }
-
-        private string ActivityFilter
-        {
-            get { return ViewState["ActivityFilter"] as string ?? "All"; }
-            set { ViewState["ActivityFilter"] = value; }
+            get { return ViewState["UnifiedSearchText"] as string ?? ""; }
+            set { ViewState["UnifiedSearchText"] = value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["LoggedInUser"] == null)
-            {
-                Response.Redirect("~/Account/Login.aspx");
-                return;
-            }
-
             if (!IsPostBack)
             {
                 string userEmail = Session["LoggedInUser"].ToString();
+              
 
-                // Set UserEmail for profile picture controls
-                
+                var user = GetCurrentUser();
+                if (user != null) lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
 
                 LoadUserInfo();
                 LoadAdminDashboard();
@@ -43,19 +31,15 @@ namespace CanteenProject.Admin
 
         private void LoadUserInfo()
         {
-            string email = Session["LoggedInUser"].ToString();
-
-            var user = AppData.Users.FirstOrDefault(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-
+            var user = GetCurrentUser();
             if (user != null)
             {
                 lblAdminName.Text = user.FullName;
+                lblAdminInviteCode.Text = user.InviteCode;
+                lblPopupPermanentID.Text = user.PermanentID;
                 lblPopupName.Text = user.FullName;
                 lblPopupEmail.Text = user.Email;
                 lblPopupRole.Text = user.Role;
-                lblPopupPermanentID.Text = user.PermanentID;
-                lblAdminInviteCode.Text = user.InviteCode ?? "No Code";
             }
         }
 
@@ -64,65 +48,15 @@ namespace CanteenProject.Admin
             lblTotalUsers.Text = AppData.Users.Count.ToString();
             lblTotalEquipment.Text = AppData.EquipmentList.Count.ToString();
             lblActiveBorrows.Text = AppData.BorrowRecords.Count(b => b.Status == "Borrowed").ToString();
-            lblPendingRequests.Text = AppData.BorrowRequests.Count(r => r.Status == "Pending").ToString();
-        }
-
-        private void UpdateNotificationBadge()
-        {
-            var borrowed = AppData.BorrowRecords.Where(b => b.Status == "Borrowed");
-            int count = 0;
-            var dueItems = new System.Collections.Generic.List<dynamic>();
-
-            foreach (var item in borrowed)
-            {
-                if (DateTime.TryParse(item.DueDate, out DateTime dueDate))
-                {
-                    int daysLeft = (dueDate - DateTime.Now).Days;
-                    if (daysLeft <= 3)
-                    {
-                        count++;
-                        dueItems.Add(new { item.StudentName, item.EquipmentName, item.DueDate, DaysLeft = daysLeft });
-                    }
-                }
-            }
-
-            lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
-
-            var html = new System.Text.StringBuilder();
-            if (count == 0)
-            {
-                html.Append("<div class='no-notifications'>✨ No items due soon.</div>");
-            }
-            else
-            {
-                html.Append("<h4>⚠️ Items due within 3 days</h4>");
-                foreach (var item in dueItems)
-                {
-                    string css = item.DaysLeft < 0 ? "overdue" : "due-soon";
-                    string text = item.DaysLeft < 0 ? "OVERDUE" : $"Due in {item.DaysLeft} day(s)";
-                    html.Append($@"
-                        <div class='notification-item'>
-                            <strong>{item.EquipmentName}</strong><br />
-                            Student: {item.StudentName}<br />
-                            Due: {item.DueDate} – <span class='{css}'>{text}</span>
-                        </div>");
-                }
-            }
-            litNotificationContent.Text = html.ToString();
         }
 
         private void LoadActivityLog()
         {
             var logs = AppData.ActivityLogs.AsQueryable();
 
-            if (ActivityFilter != "All")
+            if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
-                logs = logs.Where(l => l.Action.Contains(ActivityFilter));
-            }
-
-            if (!string.IsNullOrEmpty(ActivitySearchText))
-            {
-                string searchLower = ActivitySearchText.ToLower();
+                string searchLower = UnifiedSearchText.ToLower();
                 logs = logs.Where(l =>
                     l.ActorName.ToLower().Contains(searchLower) ||
                     l.ActorEmail.ToLower().Contains(searchLower) ||
@@ -134,60 +68,58 @@ namespace CanteenProject.Admin
             gvActivityLog.DataSource = logList;
             gvActivityLog.DataBind();
 
-            lblActivityCount.Text = $"Showing {logList.Count} activity record(s)";
+            lblSearchStats.Text = string.IsNullOrEmpty(UnifiedSearchText)
+                ? $"📋 Showing {logList.Count} total activity records"
+                : $"🔍 Found {logList.Count} record(s) matching '{UnifiedSearchText}'";
         }
 
-        protected void txtActivitySearch_TextChanged(object sender, EventArgs e)
+        protected void gvActivityLog_RowDataBound(object sender, GridViewRowEventArgs e)
         {
-            ActivitySearchText = txtActivitySearch.Text.Trim();
+            if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                foreach (TableCell cell in e.Row.Cells)
+                {
+                    if (cell.Text != null && cell.Text.ToLower().Contains(UnifiedSearchText.ToLower()))
+                    {
+                        cell.Text = HighlightText(cell.Text, UnifiedSearchText);
+                    }
+                }
+            }
+        }
+
+        private string HighlightText(string text, string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(text)) return text;
+            int index = text.ToLower().IndexOf(searchTerm.ToLower());
+            if (index >= 0)
+            {
+                return text.Substring(0, index) + "<span class='highlight'>" + text.Substring(index, searchTerm.Length) + "</span>" + text.Substring(index + searchTerm.Length);
+            }
+            return text;
+        }
+
+        protected void txtUnifiedSearch_TextChanged(object sender, EventArgs e)
+        {
+            UnifiedSearchText = txtUnifiedSearch.Text.Trim();
             LoadActivityLog();
         }
 
-        protected void btnFilterAction_Click(object sender, EventArgs e)
+        protected void btnClearSearch_Click(object sender, EventArgs e)
         {
-            Button btn = (Button)sender;
-            ActivityFilter = btn.CommandArgument;
-
-            btnAllActions.CssClass = "filter-btn";
-            btnLoginActions.CssClass = "filter-btn";
-            btnLogoutActions.CssClass = "filter-btn";
-            btnRegisterActions.CssClass = "filter-btn";
-            btnBorrowActions.CssClass = "filter-btn";
-            btnReturnActions.CssClass = "filter-btn";
-            btn.CssClass = "filter-btn active";
-
+            UnifiedSearchText = "";
+            txtUnifiedSearch.Text = "";
             LoadActivityLog();
         }
 
-        protected void btnClearActivity_Click(object sender, EventArgs e)
+        private void UpdateNotificationBadge()
         {
-            ActivitySearchText = "";
-            ActivityFilter = "All";
-            txtActivitySearch.Text = "";
-
-            btnAllActions.CssClass = "filter-btn active";
-            btnLoginActions.CssClass = "filter-btn";
-            btnLogoutActions.CssClass = "filter-btn";
-            btnRegisterActions.CssClass = "filter-btn";
-            btnBorrowActions.CssClass = "filter-btn";
-            btnReturnActions.CssClass = "filter-btn";
-
-            LoadActivityLog();
+            int count = AppData.BorrowRecords.Count(b => b.Status == "Borrowed" && DateTime.TryParse(b.DueDate, out DateTime due) && (due - DateTime.Now).Days <= 3);
+            lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
         }
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
-            if (Session["LoggedInUser"] != null)
-            {
-                AddActivityLog(Session["LoggedInUser"].ToString(),
-                               Session["UserName"]?.ToString() ?? "Admin",
-                               Session["UserRole"]?.ToString() ?? "Admin",
-                               "Logout", "User logged out.");
-            }
-
-            Session.Clear();
-            Session.Abandon();
-            Response.Redirect("~/Account/Login.aspx");
+            Logout();
         }
     }
 }

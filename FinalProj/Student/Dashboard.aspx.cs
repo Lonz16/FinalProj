@@ -6,17 +6,10 @@ namespace CanteenProject.Student
 {
     public partial class Dashboard : BasePage
     {
-        // Store current filter and search text
-        private string CurrentCategoryFilter
+        private string UnifiedSearchText
         {
-            get { return ViewState["CurrentCategoryFilter"] as string ?? "All"; }
-            set { ViewState["CurrentCategoryFilter"] = value; }
-        }
-
-        private string CurrentSearchText
-        {
-            get { return ViewState["CurrentSearchText"] as string ?? ""; }
-            set { ViewState["CurrentSearchText"] = value; }
+            get { return ViewState["UnifiedSearchText"] as string ?? ""; }
+            set { ViewState["UnifiedSearchText"] = value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -24,9 +17,8 @@ namespace CanteenProject.Student
             if (!IsPostBack)
             {
                 string userEmail = Session["LoggedInUser"].ToString();
+              
 
-             
-                // Set logout user info
                 var user = GetCurrentUser();
                 if (user != null)
                 {
@@ -56,74 +48,114 @@ namespace CanteenProject.Student
         {
             LoadAvailableEquipment();
             LoadMyBorrows();
+            UpdateSearchStats();
         }
 
         private void LoadAvailableEquipment()
         {
-            // Start with all equipment that has stock
             var equipment = AppData.EquipmentList.Where(eq => eq.Quantity > 0).AsQueryable();
 
-            // Apply category filter
-            if (CurrentCategoryFilter != "All")
+            if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
-                equipment = equipment.Where(eq => eq.Category == CurrentCategoryFilter);
-            }
-
-            // Apply search filter (search by name or category)
-            if (!string.IsNullOrEmpty(CurrentSearchText))
-            {
-                string searchLower = CurrentSearchText.ToLower();
+                string searchLower = UnifiedSearchText.ToLower();
                 equipment = equipment.Where(eq =>
                     eq.Name.ToLower().Contains(searchLower) ||
-                    eq.Category.ToLower().Contains(searchLower));
+                    (eq.Category != null && eq.Category.ToLower().Contains(searchLower)) ||
+                    (eq.Description != null && eq.Description.ToLower().Contains(searchLower)));
             }
 
-            var filteredList = equipment.ToList();
-
-            // Update results count
-            lblResultsCount.Text = $"Showing {filteredList.Count} item(s)";
-
-            // Bind to grid
-            gvAvailableEquipment.DataSource = filteredList;
+            var equipmentList = equipment.ToList();
+            gvAvailableEquipment.DataSource = equipmentList;
             gvAvailableEquipment.DataBind();
+            lblEquipmentCount.Text = $"({equipmentList.Count})";
         }
 
         private void LoadMyBorrows()
         {
             string studentEmail = Session["LoggedInUser"].ToString();
-            gvMyBorrows.DataSource = AppData.BorrowRecords
+            var borrows = AppData.BorrowRecords
                 .Where(b => b.StudentEmail == studentEmail && b.Status == "Borrowed").ToList();
+
+            gvMyBorrows.DataSource = borrows;
             gvMyBorrows.DataBind();
+            lblBorrowedCount.Text = $"({borrows.Count})";
         }
 
-        private void HighlightActiveFilter()
+        private void UpdateSearchStats()
         {
-            // Reset all button styles
-            btnAll.CssClass = "filter-btn";
-            btnElectronics.CssClass = "filter-btn";
-            btnMath.CssClass = "filter-btn";
-            btnSports.CssClass = "filter-btn";
-            btnSupplies.CssClass = "filter-btn";
-
-            // Highlight active button
-            switch (CurrentCategoryFilter)
+            if (string.IsNullOrEmpty(UnifiedSearchText))
             {
-                case "All":
-                    btnAll.CssClass = "filter-btn active";
-                    break;
-                case "Electronics":
-                    btnElectronics.CssClass = "filter-btn active";
-                    break;
-                case "Math":
-                    btnMath.CssClass = "filter-btn active";
-                    break;
-                case "Sports":
-                    btnSports.CssClass = "filter-btn active";
-                    break;
-                case "Supplies":
-                    btnSupplies.CssClass = "filter-btn active";
-                    break;
+                lblSearchStats.Text = "📋 Showing all available equipment";
             }
+            else
+            {
+                int count = AppData.EquipmentList.Count(eq => eq.Quantity > 0 &&
+                    (eq.Name.ToLower().Contains(UnifiedSearchText.ToLower()) ||
+                     (eq.Category != null && eq.Category.ToLower().Contains(UnifiedSearchText.ToLower())) ||
+                     (eq.Description != null && eq.Description.ToLower().Contains(UnifiedSearchText.ToLower()))));
+
+                lblSearchStats.Text = $"🔍 Search results for '{UnifiedSearchText}': {count} item(s) found";
+            }
+        }
+
+        protected string GetDueDateClass(string dueDate)
+        {
+            if (DateTime.TryParse(dueDate, out DateTime due))
+            {
+                int daysLeft = (due - DateTime.Now).Days;
+                if (daysLeft < 0) return "overdue";
+                if (daysLeft <= 3) return "due-soon";
+            }
+            return "";
+        }
+
+        protected void gvAvailableEquipment_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                foreach (TableCell cell in e.Row.Cells)
+                {
+                    if (cell.Text != null && cell.Text.ToLower().Contains(UnifiedSearchText.ToLower()))
+                    {
+                        cell.Text = HighlightText(cell.Text, UnifiedSearchText);
+                    }
+                }
+            }
+        }
+
+        private string HighlightText(string text, string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(text))
+                return text;
+
+            string searchLower = searchTerm.ToLower();
+            string textLower = text.ToLower();
+
+            int index = textLower.IndexOf(searchLower);
+            if (index >= 0)
+            {
+                return text.Substring(0, index) +
+                       "<span class='highlight'>" +
+                       text.Substring(index, searchTerm.Length) +
+                       "</span>" +
+                       text.Substring(index + searchTerm.Length);
+            }
+            return text;
+        }
+
+        protected void txtUnifiedSearch_TextChanged(object sender, EventArgs e)
+        {
+            UnifiedSearchText = txtUnifiedSearch.Text.Trim();
+            LoadAvailableEquipment();
+            UpdateSearchStats();
+        }
+
+        protected void btnClearSearch_Click(object sender, EventArgs e)
+        {
+            UnifiedSearchText = "";
+            txtUnifiedSearch.Text = "";
+            LoadAvailableEquipment();
+            UpdateSearchStats();
         }
 
         private void UpdateNotificationBadge()
@@ -133,69 +165,14 @@ namespace CanteenProject.Student
                 .Where(b => b.StudentEmail == userEmail && b.Status == "Borrowed");
 
             int count = 0;
-            var dueItems = new System.Collections.Generic.List<dynamic>();
-
             foreach (var item in borrowed)
             {
                 if (DateTime.TryParse(item.DueDate, out DateTime dueDate))
                 {
-                    int daysLeft = (dueDate - DateTime.Now).Days;
-                    if (daysLeft <= 3)
-                    {
-                        count++;
-                        dueItems.Add(new { item.EquipmentName, item.DueDate, DaysLeft = daysLeft });
-                    }
+                    if ((dueDate - DateTime.Now).Days <= 3) count++;
                 }
             }
-
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
-
-            var html = new System.Text.StringBuilder();
-            if (count == 0)
-            {
-                html.Append("<div class='no-notifications'>✨ No items due soon.</div>");
-            }
-            else
-            {
-                html.Append("<h4>⚠️ Items due within 3 days</h4>");
-                foreach (var item in dueItems)
-                {
-                    string css = item.DaysLeft < 0 ? "overdue" : "due-soon";
-                    string text = item.DaysLeft < 0 ? "OVERDUE" : $"Due in {item.DaysLeft} day(s)";
-                    html.Append($@"
-                        <div class='notification-item'>
-                            <strong>{item.EquipmentName}</strong><br />
-                            Due: {item.DueDate} – <span class='{css}'>{text}</span>
-                        </div>");
-                }
-            }
-            litNotificationContent.Text = html.ToString();
-        }
-
-        // Search text changed - triggers auto-search
-        protected void txtSearch_TextChanged(object sender, EventArgs e)
-        {
-            CurrentSearchText = txtSearch.Text.Trim();
-            LoadAvailableEquipment();
-        }
-
-        // Filter button click
-        protected void btnFilter_Click(object sender, EventArgs e)
-        {
-            Button btn = (Button)sender;
-            CurrentCategoryFilter = btn.CommandArgument;
-            HighlightActiveFilter();
-            LoadAvailableEquipment();
-        }
-
-        // Clear all filters
-        protected void btnClear_Click(object sender, EventArgs e)
-        {
-            CurrentCategoryFilter = "All";
-            CurrentSearchText = "";
-            txtSearch.Text = "";
-            HighlightActiveFilter();
-            LoadAvailableEquipment();
         }
 
         protected void gvAvailableEquipment_RowCommand(object sender, GridViewCommandEventArgs e)
@@ -203,32 +180,13 @@ namespace CanteenProject.Student
             if (e.CommandName != "Borrow") return;
 
             int rowIndex = Convert.ToInt32(e.CommandArgument);
+            var equipment = AppData.EquipmentList.Where(eq => eq.Quantity > 0).ToList();
+            if (rowIndex < 0 || rowIndex >= equipment.Count) return;
 
-            // Get the currently filtered list
-            var equipment = AppData.EquipmentList.Where(eq => eq.Quantity > 0).AsQueryable();
-
-            if (CurrentCategoryFilter != "All")
-            {
-                equipment = equipment.Where(eq => eq.Category == CurrentCategoryFilter);
-            }
-
-            if (!string.IsNullOrEmpty(CurrentSearchText))
-            {
-                string searchLower = CurrentSearchText.ToLower();
-                equipment = equipment.Where(eq =>
-                    eq.Name.ToLower().Contains(searchLower) ||
-                    eq.Category.ToLower().Contains(searchLower));
-            }
-
-            var filteredList = equipment.ToList();
-
-            if (rowIndex < 0 || rowIndex >= filteredList.Count) return;
-
-            var equip = filteredList[rowIndex];
+            var equip = equipment[rowIndex];
             string studentEmail = Session["LoggedInUser"].ToString();
             string studentName = Session["UserName"].ToString();
 
-            // Prevent duplicate pending request
             bool alreadyPending = AppData.BorrowRequests.Any(r =>
                 r.StudentEmail == studentEmail &&
                 r.EquipmentID == equip.EquipmentID &&
@@ -242,7 +200,6 @@ namespace CanteenProject.Student
                 return;
             }
 
-            // Check if already borrowed
             bool alreadyBorrowed = AppData.BorrowRecords.Any(b =>
                 b.StudentEmail == studentEmail &&
                 b.EquipmentID == equip.EquipmentID &&
@@ -256,7 +213,6 @@ namespace CanteenProject.Student
                 return;
             }
 
-            // Add borrow request
             AppData.BorrowRequests.Add(new BorrowRequest
             {
                 RequestID = AppData.NextRequestID++,
@@ -273,7 +229,7 @@ namespace CanteenProject.Student
             lblStudentMessage.Text = $"✅ Request for '{equip.Name}' sent to teacher.";
             lblStudentMessage.CssClass = "msg-success";
             lblStudentMessage.Visible = true;
-            LoadAvailableEquipment(); // Refresh the filtered list
+            LoadAvailableEquipment();
         }
 
         protected void gvMyBorrows_RowCommand(object sender, GridViewCommandEventArgs e)
@@ -303,7 +259,6 @@ namespace CanteenProject.Student
             UpdateNotificationBadge();
         }
 
-        // SINGLE logout method - uses BasePage.Logout()
         protected void btnLogout_Click(object sender, EventArgs e)
         {
             Logout();

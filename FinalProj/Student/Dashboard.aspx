@@ -5,7 +5,6 @@
 <head runat="server">
     <title>BorrowBox Pro - Student Dashboard</title>
     <style>
-        /* Same styles as Teacher dashboard above */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -186,6 +185,72 @@
             color: #a78bfa;
             display: inline-block;
         }
+        
+        /* Unified Search Bar Styles */
+        .unified-search-container {
+            background: #1e293b;
+            border-radius: 3rem;
+            padding: 0.2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            border: 1px solid #334155;
+        }
+        .unified-search-box {
+            flex: 1;
+            position: relative;
+        }
+        .unified-search-box input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #f1f5f9;
+            font-size: 1rem;
+            border-radius: 3rem;
+        }
+        .unified-search-box input:focus {
+            outline: none;
+        }
+        .unified-search-box input::placeholder {
+            color: #94a3b8;
+        }
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+        .search-clear {
+            background: #475569;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            transition: 0.2s;
+        }
+        .search-clear:hover {
+            background: #ef4444;
+        }
+        .search-stats {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: -1rem;
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+        }
+        .highlight {
+            background-color: rgba(167, 139, 250, 0.4);
+            font-weight: bold;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -208,6 +273,10 @@
         }
         .btn-danger { background: #ef4444; color: white; }
         .section { margin-bottom: 2rem; }
+        .msg-success { color: #34d399; }
+        .msg-error { color: #f87171; }
+        .overdue { color: #ef4444; font-weight: bold; }
+        .due-soon { color: #f59e0b; }
     </style>
     <script>
         function toggleAccountPopup() {
@@ -287,7 +356,7 @@
     <!-- Account Popup -->
     <div id="accountPopup" class="account-popup">
         <div style="text-align:center; margin-bottom:1rem;">
-          
+            
         </div>
         <p><strong>🔑 Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
         <p><strong>👤 Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
@@ -313,78 +382,57 @@
                     🚪 Sign Out
                 </button>
                 <div class="avatar-container" onclick="toggleAccountPopup()">
-                  
+                   
                 </div>
             </div>
+        </div>
+
+        <!-- Unified Search Bar -->
+        <div class="unified-search-container">
+            <div class="unified-search-box">
+                <asp:TextBox ID="txtUnifiedSearch" runat="server" placeholder="🔍 Search equipment by name, category, or description..." AutoPostBack="true" OnTextChanged="txtUnifiedSearch_TextChanged" />
+                <span class="search-icon">🔍</span>
+            </div>
+            <asp:Button ID="btnClearSearch" runat="server" Text="Clear" CssClass="search-clear" OnClick="btnClearSearch_Click" />
+        </div>
+        <div class="search-stats">
+            <asp:Label ID="lblSearchStats" runat="server" Text=""></asp:Label>
         </div>
 
         <!-- Available Equipment -->
         <div class="section">
-            <div class="section-title">📦 Available Equipment</div>
-            <asp:GridView ID="gvAvailableEquipment" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand">
+            <div class="section-title">📦 Available Equipment <asp:Label ID="lblEquipmentCount" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
+            <asp:GridView ID="gvAvailableEquipment" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand" OnRowDataBound="gvAvailableEquipment_RowDataBound">
                 <Columns>
                     <asp:BoundField DataField="Name" HeaderText="Item" />
                     <asp:BoundField DataField="Category" HeaderText="Category" />
+                    <asp:BoundField DataField="Description" HeaderText="Description" />
                     <asp:BoundField DataField="Quantity" HeaderText="In Stock" />
                     <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No equipment available</td></tr>
-                </EmptyDataTemplate>
-            </asp:GridView>
-        </div>
-
-                <!-- Available Equipment with Search -->
-        <div class="section">
-            <div class="section-title">📦 Available Equipment</div>
-    
-            <!-- Search Bar -->
-            <div class="search-container" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <div class="search-box" style="flex: 1; position: relative;">
-                    <asp:TextBox ID="txtSearch" runat="server" placeholder="🔍 Search by name or category..." AutoPostBack="true" OnTextChanged="txtSearch_TextChanged" 
-                        style="width: 100%; padding: 0.8rem 2.5rem 0.8rem 1rem; background: #0f172a; border: 1px solid #334155; border-radius: 2rem; color: white;" />
-                    <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%);">🔍</span>
-                </div>
-                <div class="filter-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <asp:Button ID="btnAll" runat="server" Text="All" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="All" />
-                    <asp:Button ID="btnElectronics" runat="server" Text="Electronics" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Electronics" />
-                    <asp:Button ID="btnMath" runat="server" Text="Math" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Math" />
-                    <asp:Button ID="btnSports" runat="server" Text="Sports" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Sports" />
-                    <asp:Button ID="btnSupplies" runat="server" Text="Supplies" CssClass="filter-btn" OnClick="btnFilter_Click" CommandArgument="Supplies" />
-                </div>
-                <asp:Button ID="btnClear" runat="server" Text="Clear" CssClass="clear-search" OnClick="btnClear_Click" 
-                    style="background: #475569; border: none; padding: 0.6rem 1.2rem; border-radius: 2rem; color: white; cursor: pointer;" />
-            </div>
-            <div class="search-results-count">
-                <asp:Label ID="lblResultsCount" runat="server" Text=""></asp:Label>
-            </div>
-    
-            <asp:GridView ID="GridView1" runat="server" AutoGenerateColumns="False" OnRowCommand="gvAvailableEquipment_RowCommand">
-                <Columns>
-                    <asp:BoundField DataField="Name" HeaderText="Item" />
-                    <asp:BoundField DataField="Category" HeaderText="Category" />
-                    <asp:BoundField DataField="Quantity" HeaderText="In Stock" />
-                    <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
-                </Columns>
-                <EmptyDataTemplate>
-                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No equipment available</td>
+                    <tr><td colspan="5" style="text-align:center; padding:2rem;">✨ No equipment available matching your search</td></tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>
 
         <!-- My Borrowed Items -->
         <div class="section">
-            <div class="section-title">📚 My Borrowed Items</div>
+            <div class="section-title">📚 My Borrowed Items <asp:Label ID="lblBorrowedCount" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
             <asp:GridView ID="gvMyBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvMyBorrows_RowCommand">
                 <Columns>
                     <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
                     <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
-                    <asp:BoundField DataField="DueDate" HeaderText="Due Date" />
+                    <asp:TemplateField HeaderText="Due Date">
+                        <ItemTemplate>
+                            <asp:Label ID="lblDueDate" runat="server" Text='<%# Eval("DueDate") %>' CssClass='<%# GetDueDateClass(Eval("DueDate").ToString()) %>' />
+                        </ItemTemplate>
+                    </asp:TemplateField>
                     <asp:BoundField DataField="Status" HeaderText="Status" />
                     <asp:ButtonField Text="Return" CommandName="Return" ButtonType="Button" ControlStyle-CssClass="btn btn-danger" />
                 </Columns>
                 <EmptyDataTemplate>
-                    <table><td colspan="5" style="text-align:center; padding:2rem;">📭 You haven't borrowed any items</td></tr>
+                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 You haven't borrowed any items</td></tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>

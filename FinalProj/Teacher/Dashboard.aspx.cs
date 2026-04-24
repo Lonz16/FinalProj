@@ -1,23 +1,17 @@
 ﻿using System;
 using System.Linq;
 using System.Web.UI.WebControls;
+using System.Drawing;
 
 namespace CanteenProject.Teacher
 {
     public partial class Dashboard : BasePage
     {
-        // Pending requests search
-        private string PendingSearchText
+        // Unified search text
+        private string UnifiedSearchText
         {
-            get { return ViewState["PendingSearchText"] as string ?? ""; }
-            set { ViewState["PendingSearchText"] = value; }
-        }
-
-        // Active borrows search
-        private string ActiveSearchText
-        {
-            get { return ViewState["ActiveSearchText"] as string ?? ""; }
-            set { ViewState["ActiveSearchText"] = value; }
+            get { return ViewState["UnifiedSearchText"] as string ?? ""; }
+            set { ViewState["UnifiedSearchText"] = value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -26,7 +20,7 @@ namespace CanteenProject.Teacher
             {
                 string userEmail = Session["LoggedInUser"].ToString();
 
-
+               
                 LoadUserInfo();
                 LoadTeacherDashboard();
                 UpdateNotificationBadge();
@@ -51,114 +45,167 @@ namespace CanteenProject.Teacher
         {
             LoadPendingRequests();
             LoadActiveBorrows();
+            UpdateSearchStats();
         }
 
         private void LoadPendingRequests()
         {
             var pending = AppData.BorrowRequests.Where(r => r.Status == "Pending").AsQueryable();
 
-            if (!string.IsNullOrEmpty(PendingSearchText))
+            // Apply unified search filter
+            if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
-                string searchLower = PendingSearchText.ToLower();
+                string searchLower = UnifiedSearchText.ToLower();
                 pending = pending.Where(r =>
                     r.StudentName.ToLower().Contains(searchLower) ||
-                    r.EquipmentName.ToLower().Contains(searchLower));
+                    r.EquipmentName.ToLower().Contains(searchLower) ||
+                    r.RequestDate.ToLower().Contains(searchLower));
             }
 
             var pendingList = pending.OrderBy(r => r.RequestDate).ToList();
             gvPendingRequests.DataSource = pendingList;
             gvPendingRequests.DataBind();
 
-            lblPendingCount.Text = $"Showing {pendingList.Count} pending request(s)";
+            lblPendingCountBadge.Text = $"({pendingList.Count})";
         }
 
         private void LoadActiveBorrows()
         {
             var active = AppData.BorrowRecords.Where(b => b.Status == "Borrowed").AsQueryable();
 
-            if (!string.IsNullOrEmpty(ActiveSearchText))
+            // Apply unified search filter
+            if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
-                string searchLower = ActiveSearchText.ToLower();
+                string searchLower = UnifiedSearchText.ToLower();
                 active = active.Where(b =>
                     b.StudentName.ToLower().Contains(searchLower) ||
-                    b.EquipmentName.ToLower().Contains(searchLower));
+                    b.EquipmentName.ToLower().Contains(searchLower) ||
+                    b.BorrowDate.ToLower().Contains(searchLower) ||
+                    b.DueDate.ToLower().Contains(searchLower));
             }
 
             var activeList = active.OrderBy(b => b.DueDate).ToList();
             gvActiveBorrows.DataSource = activeList;
             gvActiveBorrows.DataBind();
 
-            lblActiveCount.Text = $"Showing {activeList.Count} active borrow(s)";
+            lblActiveCountBadge.Text = $"({activeList.Count})";
         }
 
-        protected void txtPendingSearch_TextChanged(object sender, EventArgs e)
+        private void UpdateSearchStats()
         {
-            PendingSearchText = txtPendingSearch.Text.Trim();
-            LoadPendingRequests();
+            if (string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                lblSearchStats.Text = "📋 Showing all pending requests and active borrows";
+            }
+            else
+            {
+                int pendingCount = AppData.BorrowRequests.Count(r => r.Status == "Pending" &&
+                    (r.StudentName.ToLower().Contains(UnifiedSearchText.ToLower()) ||
+                     r.EquipmentName.ToLower().Contains(UnifiedSearchText.ToLower())));
+
+                int activeCount = AppData.BorrowRecords.Count(b => b.Status == "Borrowed" &&
+                    (b.StudentName.ToLower().Contains(UnifiedSearchText.ToLower()) ||
+                     b.EquipmentName.ToLower().Contains(UnifiedSearchText.ToLower())));
+
+                lblSearchStats.Text = $"🔍 Search results for '{UnifiedSearchText}': {pendingCount} pending request(s), {activeCount} active borrow(s)";
+            }
         }
 
-        protected void btnClearPending_Click(object sender, EventArgs e)
+        protected string GetDueDateClass(string dueDate)
         {
-            PendingSearchText = "";
-            txtPendingSearch.Text = "";
-            LoadPendingRequests();
+            if (DateTime.TryParse(dueDate, out DateTime due))
+            {
+                int daysLeft = (due - DateTime.Now).Days;
+                if (daysLeft < 0) return "overdue";
+                if (daysLeft <= 3) return "due-soon";
+            }
+            return "";
         }
 
-        protected void txtActiveSearch_TextChanged(object sender, EventArgs e)
+        // Highlight search text in GridView rows
+        protected void gvPendingRequests_RowDataBound(object sender, GridViewRowEventArgs e)
         {
-            ActiveSearchText = txtActiveSearch.Text.Trim();
-            LoadActiveBorrows();
+            if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                string searchLower = UnifiedSearchText.ToLower();
+                foreach (TableCell cell in e.Row.Cells)
+                {
+                    if (cell.Text != null && cell.Text.ToLower().Contains(searchLower))
+                    {
+                        cell.Text = HighlightText(cell.Text, UnifiedSearchText);
+                    }
+                }
+            }
         }
 
-        protected void btnClearActive_Click(object sender, EventArgs e)
+        protected void gvActiveBorrows_RowDataBound(object sender, GridViewRowEventArgs e)
         {
-            ActiveSearchText = "";
-            txtActiveSearch.Text = "";
-            LoadActiveBorrows();
+            if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                string searchLower = UnifiedSearchText.ToLower();
+                foreach (TableCell cell in e.Row.Cells)
+                {
+                    if (cell.Text != null && cell.Text.ToLower().Contains(searchLower))
+                    {
+                        cell.Text = HighlightText(cell.Text, UnifiedSearchText);
+                    }
+                }
+
+                // Also check Due Date label
+                Label lblDueDate = (Label)e.Row.FindControl("lblDueDate");
+                if (lblDueDate != null && lblDueDate.Text.ToLower().Contains(UnifiedSearchText.ToLower()))
+                {
+                    lblDueDate.Text = HighlightText(lblDueDate.Text, UnifiedSearchText);
+                }
+            }
+        }
+
+        private string HighlightText(string text, string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(text))
+                return text;
+
+            string searchLower = searchTerm.ToLower();
+            string textLower = text.ToLower();
+
+            int index = textLower.IndexOf(searchLower);
+            if (index >= 0)
+            {
+                return text.Substring(0, index) +
+                       "<span class='highlight'>" +
+                       text.Substring(index, searchTerm.Length) +
+                       "</span>" +
+                       text.Substring(index + searchTerm.Length);
+            }
+            return text;
+        }
+
+        // Search handlers
+        protected void txtUnifiedSearch_TextChanged(object sender, EventArgs e)
+        {
+            UnifiedSearchText = txtUnifiedSearch.Text.Trim();
+            LoadTeacherDashboard();
+        }
+
+        protected void btnClearSearch_Click(object sender, EventArgs e)
+        {
+            UnifiedSearchText = "";
+            txtUnifiedSearch.Text = "";
+            LoadTeacherDashboard();
         }
 
         private void UpdateNotificationBadge()
         {
             var borrowed = AppData.BorrowRecords.Where(b => b.Status == "Borrowed");
             int count = 0;
-            var dueItems = new System.Collections.Generic.List<dynamic>();
-
             foreach (var item in borrowed)
             {
                 if (DateTime.TryParse(item.DueDate, out DateTime dueDate))
                 {
-                    int daysLeft = (dueDate - DateTime.Now).Days;
-                    if (daysLeft <= 3)
-                    {
-                        count++;
-                        dueItems.Add(new { item.StudentName, item.EquipmentName, item.DueDate, DaysLeft = daysLeft });
-                    }
+                    if ((dueDate - DateTime.Now).Days <= 3) count++;
                 }
             }
-
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
-
-            var html = new System.Text.StringBuilder();
-            if (count == 0)
-            {
-                html.Append("<div class='no-notifications'>✨ No items due soon.</div>");
-            }
-            else
-            {
-                html.Append("<h4>⚠️ Items due within 3 days</h4>");
-                foreach (var item in dueItems)
-                {
-                    string css = item.DaysLeft < 0 ? "overdue" : "due-soon";
-                    string text = item.DaysLeft < 0 ? "OVERDUE" : $"Due in {item.DaysLeft} day(s)";
-                    html.Append($@"
-                        <div class='notification-item'>
-                            <strong>{item.EquipmentName}</strong><br />
-                            Student: {item.StudentName}<br />
-                            Due: {item.DueDate} – <span class='{css}'>{text}</span>
-                        </div>");
-                }
-            }
-            litNotificationContent.Text = html.ToString();
         }
 
         protected void gvPendingRequests_RowCommand(object sender, GridViewCommandEventArgs e)
@@ -241,7 +288,6 @@ namespace CanteenProject.Teacher
             UpdateNotificationBadge();
         }
 
-        // Single logout method - uses BasePage.Logout()
         protected void btnLogout_Click(object sender, EventArgs e)
         {
             Logout();

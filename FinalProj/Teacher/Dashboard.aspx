@@ -73,9 +73,7 @@
             justify-content: center;
             align-items: center;
         }
-        .modal-overlay.show {
-            display: flex;
-        }
+        .modal-overlay.show { display: flex; }
         .modal-container {
             background: linear-gradient(135deg, #1e293b, #0f172a);
             border-radius: 1.5rem;
@@ -188,49 +186,67 @@
             display: inline-block;
         }
         
-        /* Search Bar Styles */
-        .search-container {
-            margin: 1rem 0 1rem 0;
+        /* Unified Search Bar Styles */
+        .unified-search-container {
+            background: #1e293b;
+            border-radius: 3rem;
+            padding: 0.2rem;
+            margin-bottom: 2rem;
             display: flex;
             gap: 0.5rem;
-            flex-wrap: wrap;
             align-items: center;
+            border: 1px solid #334155;
         }
-        .search-box {
+        .unified-search-box {
             flex: 1;
             position: relative;
         }
-        .search-box input {
+        .unified-search-box input {
             width: 100%;
-            padding: 0.8rem 2.5rem 0.8rem 1rem;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 2rem;
+            padding: 1rem 3rem 1rem 1.5rem;
+            background: transparent;
+            border: none;
             color: #f1f5f9;
-            font-size: 0.9rem;
+            font-size: 1rem;
+            border-radius: 3rem;
+        }
+        .unified-search-box input:focus {
+            outline: none;
+        }
+        .unified-search-box input::placeholder {
+            color: #94a3b8;
         }
         .search-icon {
             position: absolute;
-            right: 12px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
+            font-size: 1.2rem;
         }
-        .clear-search {
+        .search-clear {
             background: #475569;
             border: none;
             padding: 0.6rem 1.2rem;
             border-radius: 2rem;
             color: white;
             cursor: pointer;
+            margin-right: 0.5rem;
+            transition: 0.2s;
         }
-        .clear-search:hover {
+        .search-clear:hover {
             background: #ef4444;
         }
-        .search-results-count {
+        .search-stats {
             font-size: 0.85rem;
             color: #94a3b8;
-            margin-bottom: 0.5rem;
+            margin-top: -1rem;
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+        }
+        .highlight {
+            background-color: rgba(167, 139, 250, 0.3);
+            font-weight: bold;
         }
         
         table {
@@ -268,6 +284,11 @@
         .section { margin-bottom: 2rem; }
         .msg-success { color: #34d399; }
         .msg-error { color: #f87171; }
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
     </style>
     <script>
         function toggleAccountPopup() {
@@ -347,7 +368,7 @@
     <!-- Account Popup -->
     <div id="accountPopup" class="account-popup">
         <div style="text-align:center; margin-bottom:1rem;">
-            
+           
         </div>
         <p><strong>🔑 Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
         <p><strong>👤 Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
@@ -373,7 +394,7 @@
                     🚪 Sign Out
                 </button>
                 <div class="avatar-container" onclick="toggleAccountPopup()">
-                
+                  
                 </div>
             </div>
         </div>
@@ -384,22 +405,22 @@
             <a href="ActiveBorrows.aspx" class="nav-link">🔄 Active Borrows</a>
         </div>
 
-        <!-- Pending Requests with Search -->
+        <!-- Unified Search Bar -->
+        <div class="unified-search-container">
+            <div class="unified-search-box">
+                <asp:TextBox ID="txtUnifiedSearch" runat="server" placeholder="🔍 Search across all requests and borrows... (search by student name, equipment, or date)" AutoPostBack="true" OnTextChanged="txtUnifiedSearch_TextChanged" />
+                <span class="search-icon">🔍</span>
+            </div>
+            <asp:Button ID="btnClearSearch" runat="server" Text="Clear" CssClass="search-clear" OnClick="btnClearSearch_Click" />
+        </div>
+        <div class="search-stats">
+            <asp:Label ID="lblSearchStats" runat="server" Text=""></asp:Label>
+        </div>
+
+        <!-- Pending Requests -->
         <div class="section">
-            <div class="section-title">⏳ Pending Requests</div>
-            
-            <div class="search-container">
-                <div class="search-box">
-                    <asp:TextBox ID="txtPendingSearch" runat="server" placeholder="🔍 Search by student or equipment..." AutoPostBack="true" OnTextChanged="txtPendingSearch_TextChanged" />
-                    <span class="search-icon">🔍</span>
-                </div>
-                <asp:Button ID="btnClearPending" runat="server" Text="Clear" CssClass="clear-search" OnClick="btnClearPending_Click" />
-            </div>
-            <div class="search-results-count">
-                <asp:Label ID="lblPendingCount" runat="server" Text=""></asp:Label>
-            </div>
-            
-            <asp:GridView ID="gvPendingRequests" runat="server" AutoGenerateColumns="False" OnRowCommand="gvPendingRequests_RowCommand">
+            <div class="section-title">⏳ Pending Requests <asp:Label ID="lblPendingCountBadge" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
+            <asp:GridView ID="gvPendingRequests" runat="server" AutoGenerateColumns="False" OnRowCommand="gvPendingRequests_RowCommand" OnRowDataBound="gvPendingRequests_RowDataBound">
                 <Columns>
                     <asp:BoundField DataField="StudentName" HeaderText="Student" />
                     <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
@@ -412,36 +433,28 @@
                     </asp:TemplateField>
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No pending requests</td>
+                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No pending requests</td></tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>
 
-        <!-- Active Borrows with Search -->
+        <!-- Active Borrows -->
         <div class="section">
-            <div class="section-title">🔄 Active Borrows</div>
-            
-            <div class="search-container">
-                <div class="search-box">
-                    <asp:TextBox ID="txtActiveSearch" runat="server" placeholder="🔍 Search by student or equipment..." AutoPostBack="true" OnTextChanged="txtActiveSearch_TextChanged" />
-                    <span class="search-icon">🔍</span>
-                </div>
-                <asp:Button ID="btnClearActive" runat="server" Text="Clear" CssClass="clear-search" OnClick="btnClearActive_Click" />
-            </div>
-            <div class="search-results-count">
-                <asp:Label ID="lblActiveCount" runat="server" Text=""></asp:Label>
-            </div>
-            
-            <asp:GridView ID="gvActiveBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvActiveBorrows_RowCommand">
+            <div class="section-title">🔄 Active Borrows <asp:Label ID="lblActiveCountBadge" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
+            <asp:GridView ID="gvActiveBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvActiveBorrows_RowCommand" OnRowDataBound="gvActiveBorrows_RowDataBound">
                 <Columns>
                     <asp:BoundField DataField="StudentName" HeaderText="Student" />
                     <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
                     <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
-                    <asp:BoundField DataField="DueDate" HeaderText="Due Date" />
+                    <asp:TemplateField HeaderText="Due Date">
+                        <ItemTemplate>
+                            <asp:Label ID="lblDueDate" runat="server" Text='<%# Eval("DueDate") %>' CssClass='<%# GetDueDateClass(Eval("DueDate").ToString()) %>' />
+                        </ItemTemplate>
+                    </asp:TemplateField>
                     <asp:ButtonField Text="Mark Returned" CommandName="MarkReturned" ButtonType="Button" ControlStyle-CssClass="btn btn-warning" />
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 No active borrows</td>
+                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 No active borrows</td></tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>

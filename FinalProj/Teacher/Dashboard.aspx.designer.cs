@@ -96,31 +96,40 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.Label lblNotificationBadge;
 
         /// <summary>
-        /// txtPendingSearch control.
+        /// txtUnifiedSearch control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtPendingSearch;
+        protected global::System.Web.UI.WebControls.TextBox txtUnifiedSearch;
 
         /// <summary>
-        /// btnClearPending control.
+        /// btnClearSearch control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnClearPending;
+        protected global::System.Web.UI.WebControls.Button btnClearSearch;
 
         /// <summary>
-        /// lblPendingCount control.
+        /// lblSearchStats control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblPendingCount;
+        protected global::System.Web.UI.WebControls.Label lblSearchStats;
+
+        /// <summary>
+        /// lblPendingCountBadge control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblPendingCountBadge;
 
         /// <summary>
         /// gvPendingRequests control.
@@ -132,31 +141,13 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.GridView gvPendingRequests;
 
         /// <summary>
-        /// txtActiveSearch control.
+        /// lblActiveCountBadge control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox txtActiveSearch;
-
-        /// <summary>
-        /// btnClearActive control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnClearActive;
-
-        /// <summary>
-        /// lblActiveCount control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblActiveCount;
+        protected global::System.Web.UI.WebControls.Label lblActiveCountBadge;
 
         /// <summary>
         /// gvActiveBorrows control.
