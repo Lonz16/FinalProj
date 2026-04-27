@@ -78,6 +78,51 @@ namespace CanteenProject.Student
         protected global::System.Web.UI.WebControls.Literal litNotificationContent;
 
         /// <summary>
+        /// lblExtendEquipmentName control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblExtendEquipmentName;
+
+        /// <summary>
+        /// lblExtendCurrentDate control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblExtendCurrentDate;
+
+        /// <summary>
+        /// ddlExtendDays control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.DropDownList ddlExtendDays;
+
+        /// <summary>
+        /// btnSubmitExtension control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnSubmitExtension;
+
+        /// <summary>
+        /// hfBorrowID control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfBorrowID;
+
+        /// <summary>
         /// lblStudentName control.
         /// </summary>
         /// <remarks>

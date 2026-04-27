@@ -37,7 +37,6 @@
             align-items: center;
         }
         
-        /* Professional Logout Button */
         .logout-btn-professional {
             display: flex;
             align-items: center;
@@ -59,7 +58,6 @@
             box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
         }
         
-        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -186,7 +184,6 @@
             display: inline-block;
         }
         
-        /* Unified Search Bar Styles */
         .unified-search-container {
             background: #1e293b;
             border-radius: 3rem;
@@ -271,6 +268,7 @@
             background: linear-gradient(95deg, #4f46e5, #7c3aed);
             color: white;
         }
+        .btn-warning { background: #f59e0b; color: white; }
         .btn-danger { background: #ef4444; color: white; }
         .section { margin-bottom: 2rem; }
         .msg-success { color: #34d399; }
@@ -322,6 +320,17 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') hideLogoutModal();
         });
+
+        function showExtensionModal(borrowId, equipmentName, currentDueDate) {
+            document.getElementById('<%= hfBorrowID.ClientID %>').value = borrowId;
+            document.getElementById('<%= lblExtendEquipmentName.ClientID %>').innerText = equipmentName;
+            document.getElementById('<%= lblExtendCurrentDate.ClientID %>').innerText = currentDueDate;
+            document.getElementById('extensionModal').style.display = 'flex';
+        }
+
+        function closeExtensionModal() {
+            document.getElementById('extensionModal').style.display = 'none';
+        }
     </script>
 </head>
 <body>
@@ -369,6 +378,40 @@
         <asp:Literal ID="litNotificationContent" runat="server"></asp:Literal>
     </div>
 
+    <!-- Extension Request Modal -->
+    <div id="extensionModal" class="modal-overlay" style="display:none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="warning-icon">📅</div>
+                <h3>Request Extension</h3>
+            </div>
+            <div class="modal-body">
+                <p>Extend due date for: <strong><asp:Label ID="lblExtendEquipmentName" runat="server"></asp:Label></strong></p>
+                <p>Current due date: <strong><asp:Label ID="lblExtendCurrentDate" runat="server"></asp:Label></strong></p>
+                <div style="margin: 1rem 0;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Number of days to extend (max 7):</label>
+                    <asp:DropDownList ID="ddlExtendDays" runat="server" style="width: 100%; padding: 0.5rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; color: white;">
+                        <asp:ListItem Text="1 day" Value="1" />
+                        <asp:ListItem Text="2 days" Value="2" />
+                        <asp:ListItem Text="3 days" Value="3" />
+                        <asp:ListItem Text="4 days" Value="4" />
+                        <asp:ListItem Text="5 days" Value="5" />
+                        <asp:ListItem Text="6 days" Value="6" />
+                        <asp:ListItem Text="7 days" Value="7" Selected="True" />
+                    </asp:DropDownList>
+                </div>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Note: Extension requests require teacher approval.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeExtensionModal()">Cancel</button>
+                <asp:Button ID="btnSubmitExtension" runat="server" Text="Submit Request" CssClass="modal-btn modal-btn-confirm" OnClick="btnSubmitExtension_Click" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden field to store BorrowID -->
+    <asp:HiddenField ID="hfBorrowID" runat="server" Value="0" />
+
     <!-- Dashboard Content -->
     <div class="dashboard">
         <div class="dashboard-header">
@@ -411,31 +454,40 @@
                     <asp:ButtonField Text="Request Borrow" CommandName="Borrow" ButtonType="Button" ControlStyle-CssClass="btn btn-primary" />
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="5" style="text-align:center; padding:2rem;">✨ No equipment available matching your search</td></tr>
+                    <tr><td colspan="5" style="text-align:center; padding:2rem;">✨ No equipment available matching your search</td>
+                    </tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>
 
-        <!-- My Borrowed Items -->
-        <div class="section">
-            <div class="section-title">📚 My Borrowed Items <asp:Label ID="lblBorrowedCount" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
-            <asp:GridView ID="gvMyBorrows" runat="server" AutoGenerateColumns="False" OnRowCommand="gvMyBorrows_RowCommand">
-                <Columns>
-                    <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
-                    <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
-                    <asp:TemplateField HeaderText="Due Date">
-                        <ItemTemplate>
-                            <asp:Label ID="lblDueDate" runat="server" Text='<%# Eval("DueDate") %>' CssClass='<%# GetDueDateClass(Eval("DueDate").ToString()) %>' />
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                    <asp:BoundField DataField="Status" HeaderText="Status" />
-                    <asp:ButtonField Text="Return" CommandName="Return" ButtonType="Button" ControlStyle-CssClass="btn btn-danger" />
-                </Columns>
-                <EmptyDataTemplate>
-                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 You haven't borrowed any items</td></tr>
-                </EmptyDataTemplate>
-            </asp:GridView>
-        </div>
+       <!-- My Borrowed Items -->
+<div class="section">
+    <div class="section-title">📚 My Borrowed Items <asp:Label ID="lblBorrowedCount" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
+    <asp:GridView ID="gvMyBorrows" runat="server" AutoGenerateColumns="False">
+        <Columns>
+            <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
+            <asp:BoundField DataField="BorrowDate" HeaderText="Borrow Date" />
+            <asp:TemplateField HeaderText="Due Date">
+                <ItemTemplate>
+                    <asp:Label ID="lblDueDate" runat="server" Text='<%# Eval("DueDate") %>' CssClass='<%# GetDueDateClass(Eval("DueDate").ToString()) %>' />
+                </ItemTemplate>
+            </asp:TemplateField>
+            <asp:BoundField DataField="Status" HeaderText="Status" />
+            <asp:TemplateField HeaderText="Actions">
+                <ItemTemplate>
+                    <asp:Button ID="btnExtend" runat="server" Text="Extend" 
+                        OnClientClick='<%# "showExtensionModal(" + Eval("BorrowID") + ", \"" + Eval("EquipmentName").ToString().Replace("\"", "\\\"") + "\", \"" + Eval("DueDate") + "\"); return false;" %>' 
+                        CssClass="btn btn-warning" />
+                </ItemTemplate>
+            </asp:TemplateField>
+        </Columns>
+        <EmptyDataTemplate>
+            <tr>
+                <td colspan="5" style="text-align:center; padding:2rem;">📭 You haven't borrowed any items</td>
+            </tr>
+        </EmptyDataTemplate>
+    </asp:GridView>
+</div>
 
         <asp:Label ID="lblStudentMessage" runat="server" Visible="false" />
     </div>

@@ -20,7 +20,6 @@ namespace CanteenProject.Teacher
             {
                 string userEmail = Session["LoggedInUser"].ToString();
 
-               
                 LoadUserInfo();
                 LoadTeacherDashboard();
                 UpdateNotificationBadge();
@@ -37,7 +36,7 @@ namespace CanteenProject.Teacher
                 lblPopupName.Text = user.FullName;
                 lblPopupEmail.Text = user.Email;
                 lblPopupRole.Text = user.Role;
-                lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
+                lblLogoutUserName.Text = user.FullName + " (" + user.Email + ")";
             }
         }
 
@@ -45,6 +44,7 @@ namespace CanteenProject.Teacher
         {
             LoadPendingRequests();
             LoadActiveBorrows();
+            LoadExtensionRequests();
             UpdateSearchStats();
         }
 
@@ -66,7 +66,7 @@ namespace CanteenProject.Teacher
             gvPendingRequests.DataSource = pendingList;
             gvPendingRequests.DataBind();
 
-            lblPendingCountBadge.Text = $"({pendingList.Count})";
+            lblPendingCountBadge.Text = "(" + pendingList.Count + ")";
         }
 
         private void LoadActiveBorrows()
@@ -88,7 +88,7 @@ namespace CanteenProject.Teacher
             gvActiveBorrows.DataSource = activeList;
             gvActiveBorrows.DataBind();
 
-            lblActiveCountBadge.Text = $"({activeList.Count})";
+            lblActiveCountBadge.Text = "(" + activeList.Count + ")";
         }
 
         private void UpdateSearchStats()
@@ -107,7 +107,7 @@ namespace CanteenProject.Teacher
                     (b.StudentName.ToLower().Contains(UnifiedSearchText.ToLower()) ||
                      b.EquipmentName.ToLower().Contains(UnifiedSearchText.ToLower())));
 
-                lblSearchStats.Text = $"🔍 Search results for '{UnifiedSearchText}': {pendingCount} pending request(s), {activeCount} active borrow(s)";
+                lblSearchStats.Text = "🔍 Search results for '" + UnifiedSearchText + "': " + pendingCount + " pending request(s), " + activeCount + " active borrow(s)";
             }
         }
 
@@ -208,6 +208,114 @@ namespace CanteenProject.Teacher
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
         }
 
+        // Add this method to load extension requests
+        private void LoadExtensionRequests()
+        {
+            var extensions = AppData.ExtensionRequests.Where(r => r.Status == "Pending").AsQueryable();
+
+            if (!string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                string searchLower = UnifiedSearchText.ToLower();
+                extensions = extensions.Where(r =>
+                    r.StudentName.ToLower().Contains(searchLower) ||
+                    r.EquipmentName.ToLower().Contains(searchLower));
+            }
+
+            var extensionList = extensions.OrderBy(r => r.RequestDate).ToList();
+            gvExtensionRequests.DataSource = extensionList;
+            gvExtensionRequests.DataBind();
+
+            lblExtensionCountBadge.Text = "(" + extensionList.Count + ")";
+        }
+
+        // DEBUG METHOD - Check Extension Requests
+        protected void btnCheckExtensions_Click(object sender, EventArgs e)
+        {
+            string message = "=== EXTENSION REQUESTS DEBUG ===<br/>";
+            message += "Total ExtensionRequests count: " + AppData.ExtensionRequests.Count + "<br/><br/>";
+
+            if (AppData.ExtensionRequests.Count == 0)
+            {
+                message += "No extension requests found. Make sure a student has submitted a request.";
+            }
+            else
+            {
+                message += "List of Extension Requests:<br/>";
+                foreach (var ext in AppData.ExtensionRequests)
+                {
+                    message += "- Student: " + ext.StudentName + "<br/>";
+                    message += "  Equipment: " + ext.EquipmentName + "<br/>";
+                    message += "  Status: " + ext.Status + "<br/>";
+                    message += "  Days: " + ext.DaysRequested + "<br/>";
+                    message += "  BorrowID: " + ext.BorrowID + "<br/>";
+                    message += "  ---<br/>";
+                }
+            }
+
+            lblDebugInfo.Text = message;
+            lblDebugInfo.Visible = true;
+            lblDebugInfo.CssClass = "msg-info";
+        }
+
+        // Add this method to handle approve/deny extension requests
+        protected void gvExtensionRequests_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName != "ApproveExt" && e.CommandName != "DenyExt") return;
+
+            int extensionID = Convert.ToInt32(e.CommandArgument);
+            var extension = AppData.ExtensionRequests.FirstOrDefault(r => r.ExtensionID == extensionID);
+            if (extension == null) return;
+
+            string teacherEmail = Session["LoggedInUser"].ToString();
+            string teacherName = Session["UserName"].ToString();
+
+            if (e.CommandName == "ApproveExt")
+            {
+                var borrow = AppData.BorrowRecords.FirstOrDefault(b => b.BorrowID == extension.BorrowID);
+                if (borrow != null)
+                {
+                    string oldDueDate = borrow.DueDate;
+                    borrow.DueDate = extension.RequestedNewDate;
+                    extension.Status = "Approved";
+
+                    AddActivityLog(teacherEmail, teacherName, "Teacher", "Approve Extension",
+                        "Approved extension for " + extension.StudentName + " on '" + extension.EquipmentName +
+                        "' from " + oldDueDate + " to " + extension.RequestedNewDate);
+
+                    lblTeacherMessage.Text = "✅ Approved extension for " + extension.StudentName + " on '" + extension.EquipmentName + "'.";
+                    lblTeacherMessage.CssClass = "msg-success";
+                }
+            }
+            else
+            {
+                extension.Status = "Denied";
+                AddActivityLog(teacherEmail, teacherName, "Teacher", "Deny Extension",
+                    "Denied extension request for " + extension.StudentName + " on '" + extension.EquipmentName + "'");
+                lblTeacherMessage.Text = "❌ Denied extension request from " + extension.StudentName + ".";
+                lblTeacherMessage.CssClass = "msg-error";
+            }
+
+            lblTeacherMessage.Visible = true;
+            LoadTeacherDashboard();
+            UpdateNotificationBadge();
+        }
+
+        // Add RowDataBound for highlighting
+        protected void gvExtensionRequests_RowDataBound(object sender, GridViewRowEventArgs e)
+        {
+            if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                string searchLower = UnifiedSearchText.ToLower();
+                foreach (TableCell cell in e.Row.Cells)
+                {
+                    if (cell.Text != null && cell.Text.ToLower().Contains(searchLower))
+                    {
+                        cell.Text = HighlightText(cell.Text, UnifiedSearchText);
+                    }
+                }
+            }
+        }
+
         protected void gvPendingRequests_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName != "Approve" && e.CommandName != "Deny") return;
@@ -238,15 +346,15 @@ namespace CanteenProject.Teacher
                         Status = "Borrowed"
                     });
                     AddActivityLog(teacherEmail, teacherName, "Teacher", "Approve Request",
-                                   $"Approved {request.StudentName}'s request for '{request.EquipmentName}'");
-                    lblTeacherMessage.Text = $"✅ Approved: '{request.EquipmentName}' for {request.StudentName}.";
+                                   "Approved " + request.StudentName + "'s request for '" + request.EquipmentName + "'");
+                    lblTeacherMessage.Text = "✅ Approved: '" + request.EquipmentName + "' for " + request.StudentName + ".";
                     lblTeacherMessage.CssClass = "msg-success";
                 }
                 else
                 {
                     AddActivityLog(teacherEmail, teacherName, "Teacher", "Approve Failed",
-                                   $"Out of stock – {request.EquipmentName}");
-                    lblTeacherMessage.Text = $"❌ Cannot approve – '{request.EquipmentName}' is out of stock.";
+                                   "Out of stock – " + request.EquipmentName);
+                    lblTeacherMessage.Text = "❌ Cannot approve – '" + request.EquipmentName + "' is out of stock.";
                     lblTeacherMessage.CssClass = "msg-error";
                 }
             }
@@ -254,8 +362,8 @@ namespace CanteenProject.Teacher
             {
                 request.Status = "Denied";
                 AddActivityLog(teacherEmail, teacherName, "Teacher", "Deny Request",
-                               $"Denied {request.StudentName}'s request for '{request.EquipmentName}'");
-                lblTeacherMessage.Text = $"❌ Denied request from {request.StudentName}.";
+                               "Denied " + request.StudentName + "'s request for '" + request.EquipmentName + "'");
+                lblTeacherMessage.Text = "❌ Denied request from " + request.StudentName + ".";
                 lblTeacherMessage.CssClass = "msg-error";
             }
 
@@ -280,8 +388,8 @@ namespace CanteenProject.Teacher
             if (equip != null) equip.Quantity++;
 
             AddActivityLog(Session["LoggedInUser"].ToString(), Session["UserName"].ToString(),
-                           "Teacher", "Mark Returned", $"Marked '{borrow.EquipmentName}' returned by {borrow.StudentName}");
-            lblTeacherMessage.Text = $"✅ '{borrow.EquipmentName}' marked as returned by {borrow.StudentName}.";
+                           "Teacher", "Mark Returned", "Marked '" + borrow.EquipmentName + "' returned by " + borrow.StudentName);
+            lblTeacherMessage.Text = "✅ '" + borrow.EquipmentName + "' marked as returned by " + borrow.StudentName + ".";
             lblTeacherMessage.CssClass = "msg-success";
             lblTeacherMessage.Visible = true;
             LoadTeacherDashboard();

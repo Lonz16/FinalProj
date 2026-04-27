@@ -14,15 +14,19 @@ namespace CanteenProject.Student
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Check if user is logged in
+            if (Session["LoggedInUser"] == null)
+            {
+                Response.Redirect("~/Account/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                string userEmail = Session["LoggedInUser"].ToString();
-              
-
                 var user = GetCurrentUser();
                 if (user != null)
                 {
-                    lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
+                    lblLogoutUserName.Text = user.FullName + " (" + user.Email + ")";
                 }
 
                 LoadUserInfo();
@@ -67,7 +71,7 @@ namespace CanteenProject.Student
             var equipmentList = equipment.ToList();
             gvAvailableEquipment.DataSource = equipmentList;
             gvAvailableEquipment.DataBind();
-            lblEquipmentCount.Text = $"({equipmentList.Count})";
+            lblEquipmentCount.Text = "(" + equipmentList.Count + ")";
         }
 
         private void LoadMyBorrows()
@@ -78,7 +82,7 @@ namespace CanteenProject.Student
 
             gvMyBorrows.DataSource = borrows;
             gvMyBorrows.DataBind();
-            lblBorrowedCount.Text = $"({borrows.Count})";
+            lblBorrowedCount.Text = "(" + borrows.Count + ")";
         }
 
         private void UpdateSearchStats()
@@ -94,7 +98,7 @@ namespace CanteenProject.Student
                      (eq.Category != null && eq.Category.ToLower().Contains(UnifiedSearchText.ToLower())) ||
                      (eq.Description != null && eq.Description.ToLower().Contains(UnifiedSearchText.ToLower()))));
 
-                lblSearchStats.Text = $"🔍 Search results for '{UnifiedSearchText}': {count} item(s) found";
+                lblSearchStats.Text = "🔍 Search results for '" + UnifiedSearchText + "': " + count + " item(s) found";
             }
         }
 
@@ -194,7 +198,7 @@ namespace CanteenProject.Student
 
             if (alreadyPending)
             {
-                lblStudentMessage.Text = $"⚠️ You already have a pending request for {equip.Name}.";
+                lblStudentMessage.Text = "⚠️ You already have a pending request for " + equip.Name + ".";
                 lblStudentMessage.CssClass = "msg-error";
                 lblStudentMessage.Visible = true;
                 return;
@@ -207,7 +211,7 @@ namespace CanteenProject.Student
 
             if (alreadyBorrowed)
             {
-                lblStudentMessage.Text = $"⚠️ You already have '{equip.Name}' borrowed.";
+                lblStudentMessage.Text = "⚠️ You already have '" + equip.Name + "' borrowed.";
                 lblStudentMessage.CssClass = "msg-error";
                 lblStudentMessage.Visible = true;
                 return;
@@ -224,40 +228,131 @@ namespace CanteenProject.Student
                 Status = "Pending"
             });
 
-            AddActivityLog(studentEmail, studentName, "Student", "Borrow Request", $"Requested '{equip.Name}'");
+            AddActivityLog(studentEmail, studentName, "Student", "Borrow Request", "Requested '" + equip.Name + "'");
 
-            lblStudentMessage.Text = $"✅ Request for '{equip.Name}' sent to teacher.";
+            lblStudentMessage.Text = "✅ Request for '" + equip.Name + "' sent to teacher.";
             lblStudentMessage.CssClass = "msg-success";
             lblStudentMessage.Visible = true;
             LoadAvailableEquipment();
         }
 
-        protected void gvMyBorrows_RowCommand(object sender, GridViewCommandEventArgs e)
+        // ========== SUBMIT EXTENSION REQUEST FROM MODAL ==========
+        protected void btnSubmitExtension_Click(object sender, EventArgs e)
         {
-            if (e.CommandName != "Return") return;
-
-            int rowIndex = Convert.ToInt32(e.CommandArgument);
+            // Get BorrowID from HiddenField (not ViewState)
+            int borrowId = 0;
+            int.TryParse(hfBorrowID.Value, out borrowId);
+            int daysToAdd = Convert.ToInt32(ddlExtendDays.SelectedValue);
             string email = Session["LoggedInUser"].ToString();
-            var myBorrows = AppData.BorrowRecords
-                .Where(b => b.StudentEmail == email && b.Status == "Borrowed").ToList();
 
-            if (rowIndex < 0 || rowIndex >= myBorrows.Count) return;
-            var borrow = myBorrows[rowIndex];
+            // Debug output
+            System.Diagnostics.Debug.WriteLine("=== SUBMIT EXTENSION REQUEST ===");
+            System.Diagnostics.Debug.WriteLine("BorrowID from hidden field: " + borrowId);
+            System.Diagnostics.Debug.WriteLine("Days to add: " + daysToAdd);
 
-            borrow.Status = "Returned";
-            borrow.ReturnDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+            var borrow = AppData.BorrowRecords.FirstOrDefault(b => b.BorrowID == borrowId && b.StudentEmail == email);
+            if (borrow == null)
+            {
+                lblStudentMessage.Text = "❌ Borrow record not found. BorrowID: " + borrowId;
+                lblStudentMessage.CssClass = "msg-error";
+                lblStudentMessage.Visible = true;
 
-            var equip = AppData.EquipmentList.FirstOrDefault(eq => eq.EquipmentID == borrow.EquipmentID);
-            if (equip != null) equip.Quantity++;
+                // Close modal
+                ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
+                return;
+            }
 
-            AddActivityLog(email, Session["UserName"].ToString(), "Student", "Return Item", $"Returned '{borrow.EquipmentName}'");
+            // Check if there's already a pending extension request
+            bool hasPendingRequest = false;
+            if (AppData.ExtensionRequests != null)
+            {
+                hasPendingRequest = AppData.ExtensionRequests.Any(r => r.BorrowID == borrowId && r.Status == "Pending");
+            }
 
-            lblStudentMessage.Text = $"✅ '{borrow.EquipmentName}' returned successfully.";
+            if (hasPendingRequest)
+            {
+                lblStudentMessage.Text = "⚠️ You already have a pending extension request for this item. Please wait for teacher approval.";
+                lblStudentMessage.CssClass = "msg-error";
+                lblStudentMessage.Visible = true;
+                ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
+                return;
+            }
+
+            // Check if already extended once
+            bool alreadyExtended = false;
+            if (AppData.ExtensionRequests != null)
+            {
+                alreadyExtended = AppData.ExtensionRequests.Any(r => r.BorrowID == borrowId && r.Status == "Approved");
+            }
+
+            if (alreadyExtended)
+            {
+                lblStudentMessage.Text = "⚠️ You have already extended this item. Maximum 7 days extension allowed once.";
+                lblStudentMessage.CssClass = "msg-error";
+                lblStudentMessage.Visible = true;
+                ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
+                return;
+            }
+
+            // Parse current due date
+            DateTime currentDueDate;
+            if (!DateTime.TryParse(borrow.DueDate, out currentDueDate))
+            {
+                lblStudentMessage.Text = "❌ Invalid due date format.";
+                lblStudentMessage.CssClass = "msg-error";
+                lblStudentMessage.Visible = true;
+                ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
+                return;
+            }
+
+            // Calculate new due date
+            DateTime newDueDate = currentDueDate.AddDays(daysToAdd);
+
+            // Check if extension exceeds 30 days total from today
+            if (newDueDate > DateTime.Now.AddDays(30))
+            {
+                lblStudentMessage.Text = "⚠️ Cannot extend beyond 30 days from today. Maximum extension not allowed.";
+                lblStudentMessage.CssClass = "msg-error";
+                lblStudentMessage.Visible = true;
+                ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
+                return;
+            }
+
+            // Initialize ExtensionRequests if null
+            if (AppData.ExtensionRequests == null)
+            {
+                AppData.ExtensionRequests = new System.Collections.Generic.List<ExtensionRequest>();
+                AppData.NextExtensionID = 1;
+            }
+
+            // Create extension request
+            AppData.ExtensionRequests.Add(new ExtensionRequest
+            {
+                ExtensionID = AppData.NextExtensionID++,
+                BorrowID = borrow.BorrowID,
+                StudentEmail = email,
+                StudentName = Session["UserName"].ToString(),
+                EquipmentName = borrow.EquipmentName,
+                CurrentDueDate = borrow.DueDate,
+                RequestedNewDate = newDueDate.ToString("yyyy-MM-dd"),
+                RequestDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                Status = "Pending",
+                DaysRequested = daysToAdd
+            });
+
+            AddActivityLog(email, Session["UserName"].ToString(), "Student", "Extension Request",
+                "Requested " + daysToAdd + "-day extension for '" + borrow.EquipmentName + "' to " + newDueDate.ToString("yyyy-MM-dd"));
+
+            lblStudentMessage.Text = "✅ Extension request for " + daysToAdd + " days sent to teacher for approval.";
             lblStudentMessage.CssClass = "msg-success";
             lblStudentMessage.Visible = true;
+
+            // Close modal and refresh
+            ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
             LoadStudentDashboard();
             UpdateNotificationBadge();
         }
+        // ========== END EXTENSION REQUEST METHOD ==========
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {

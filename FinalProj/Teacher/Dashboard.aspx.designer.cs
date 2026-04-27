@@ -123,6 +123,24 @@ namespace CanteenProject.Teacher
         protected global::System.Web.UI.WebControls.Label lblSearchStats;
 
         /// <summary>
+        /// btnCheckExtensions control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnCheckExtensions;
+
+        /// <summary>
+        /// lblDebugInfo control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblDebugInfo;
+
+        /// <summary>
         /// lblPendingCountBadge control.
         /// </summary>
         /// <remarks>
@@ -157,6 +175,24 @@ namespace CanteenProject.Teacher
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.GridView gvActiveBorrows;
+
+        /// <summary>
+        /// lblExtensionCountBadge control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblExtensionCountBadge;
+
+        /// <summary>
+        /// gvExtensionRequests control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.GridView gvExtensionRequests;
 
         /// <summary>
         /// lblTeacherMessage control.

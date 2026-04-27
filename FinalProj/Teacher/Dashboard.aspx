@@ -37,7 +37,6 @@
             align-items: center;
         }
         
-        /* Professional Logout Button */
         .logout-btn-professional {
             display: flex;
             align-items: center;
@@ -59,7 +58,6 @@
             box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
         }
         
-        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -186,7 +184,6 @@
             display: inline-block;
         }
         
-        /* Unified Search Bar Styles */
         .unified-search-container {
             background: #1e293b;
             border-radius: 3rem;
@@ -288,6 +285,10 @@
             text-align: center;
             padding: 2rem;
             color: #94a3b8;
+        }
+        .debug-btn {
+            background: #8b5cf6;
+            margin-bottom: 1rem;
         }
     </style>
     <script>
@@ -417,6 +418,13 @@
             <asp:Label ID="lblSearchStats" runat="server" Text=""></asp:Label>
         </div>
 
+        <!-- DEBUG BUTTON - Check Extension Requests -->
+        <div class="section">
+            <div class="section-title">🔧 Debug Tools</div>
+            <asp:Button ID="btnCheckExtensions" runat="server" Text="Check Extension Requests Count" OnClick="btnCheckExtensions_Click" CssClass="btn btn-warning debug-btn" />
+            <asp:Label ID="lblDebugInfo" runat="server" CssClass="msg-info" Visible="false" />
+        </div>
+
         <!-- Pending Requests -->
         <div class="section">
             <div class="section-title">⏳ Pending Requests <asp:Label ID="lblPendingCountBadge" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
@@ -455,6 +463,30 @@
                 </Columns>
                 <EmptyDataTemplate>
                     <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 No active borrows</td></tr>
+                </EmptyDataTemplate>
+            </asp:GridView>
+        </div>
+
+        <!-- Extension Requests Section -->
+        <div class="section">
+            <div class="section-title">⏳ Extension Requests <asp:Label ID="lblExtensionCountBadge" runat="server" style="font-size:0.9rem; color:#94a3b8;"></asp:Label></div>
+            <asp:GridView ID="gvExtensionRequests" runat="server" AutoGenerateColumns="False" OnRowCommand="gvExtensionRequests_RowCommand" OnRowDataBound="gvExtensionRequests_RowDataBound">
+                <Columns>
+                    <asp:BoundField DataField="StudentName" HeaderText="Student" />
+                    <asp:BoundField DataField="EquipmentName" HeaderText="Equipment" />
+                    <asp:BoundField DataField="CurrentDueDate" HeaderText="Current Due Date" />
+                    <asp:BoundField DataField="DaysRequested" HeaderText="Days" />
+                    <asp:BoundField DataField="RequestedNewDate" HeaderText="New Due Date" />
+                    <asp:BoundField DataField="RequestDate" HeaderText="Requested On" />
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <asp:Button ID="btnApproveExt" runat="server" Text="Approve" CommandName="ApproveExt" CommandArgument='<%# Eval("ExtensionID") %>' CssClass="btn btn-success" />
+                            <asp:Button ID="btnDenyExt" runat="server" Text="Deny" CommandName="DenyExt" CommandArgument='<%# Eval("ExtensionID") %>' CssClass="btn btn-danger" />
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+                <EmptyDataTemplate>
+                    <tr><td colspan="7" style="text-align:center; padding:2rem;">✨ No pending extension requests</td></tr>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Data.SqlClient;
+using System.Configuration;
 
 namespace CanteenProject.Account
 {
@@ -70,8 +72,13 @@ namespace CanteenProject.Account
                 InvitedByAdminCode = inviteCode
             };
 
+            // Save to in-memory AppData (existing code)
             AppData.Users.Add(newUser);
             AppData.NextUserID++;
+
+            // ========== NEW: Save to SQL Server Database ==========
+            SaveUserToDatabase(newUser);
+            // =====================================================
 
             AddActivityLog(newUser.Email, newUser.FullName, newUser.Role, "Register",
                            $"New {role} account created using invite code from Admin.");
@@ -84,6 +91,42 @@ namespace CanteenProject.Account
             txtSignupPassword.Text = "";
             txtInviteCode.Text = "";
         }
+
+        // ========== NEW METHOD: Save user to SQL Server ==========
+        private void SaveUserToDatabase(User user)
+        {
+            try
+            {
+                string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["BorrowBoxDB"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string sql = @"INSERT INTO Users (UserID, PermanentID, FullName, Email, PasswordHash, Role, InviteCode, InvitedByAdminCode, ProfilePictureUrl) 
+                                   VALUES (@UserID, @PermanentID, @FullName, @Email, @PasswordHash, @Role, @InviteCode, @InvitedByAdminCode, @ProfilePictureUrl)";
+
+                    SqlCommand cmd = new SqlCommand(sql, conn);
+                    cmd.Parameters.AddWithValue("@UserID", user.UserID);
+                    cmd.Parameters.AddWithValue("@PermanentID", user.PermanentID ?? "");
+                    cmd.Parameters.AddWithValue("@FullName", user.FullName);
+                    cmd.Parameters.AddWithValue("@Email", user.Email);
+                    cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
+                    cmd.Parameters.AddWithValue("@Role", user.Role);
+                    cmd.Parameters.AddWithValue("@InviteCode", user.InviteCode ?? "");
+                    cmd.Parameters.AddWithValue("@InvitedByAdminCode", user.InvitedByAdminCode ?? "");
+                    cmd.Parameters.AddWithValue("@ProfilePictureUrl", user.ProfilePictureUrl ?? "");
+
+                    cmd.ExecuteNonQuery();
+                    System.Diagnostics.Debug.WriteLine("User saved to SQL Server: " + user.Email);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SQL Error: " + ex.Message);
+                // Don't show error to user - AppData still has the data
+            }
+        }
+        // ========================================================
 
         private void ShowMessage(string message, string cssClass)
         {

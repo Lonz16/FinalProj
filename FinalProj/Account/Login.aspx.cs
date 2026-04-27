@@ -7,6 +7,9 @@ namespace CanteenProject.Account
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+
+            string hash = HashPassword("Admin@123");
+            System.Diagnostics.Debug.WriteLine("Admin password hash: " + hash);
             // If already logged in, redirect to appropriate dashboard
             if (Session["LoggedInUser"] != null)
             {

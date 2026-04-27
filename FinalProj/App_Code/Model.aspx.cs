@@ -13,7 +13,21 @@ namespace CanteenProject
         public string Role { get; set; }
         public string InviteCode { get; set; }
         public string InvitedByAdminCode { get; set; }
-        public string ProfilePictureUrl { get; set; }  // Profile picture
+        public string ProfilePictureUrl { get; set; }
+    }
+
+    public class ExtensionRequest
+    {
+        public int ExtensionID { get; set; }
+        public int BorrowID { get; set; }
+        public string StudentEmail { get; set; }
+        public string StudentName { get; set; }
+        public string EquipmentName { get; set; }
+        public string CurrentDueDate { get; set; }
+        public string RequestedNewDate { get; set; }
+        public string RequestDate { get; set; }
+        public string Status { get; set; } // Pending, Approved, Denied
+        public int DaysRequested { get; set; } // Number of days requested (1-7)
     }
 
     public class Equipment
@@ -22,8 +36,8 @@ namespace CanteenProject
         public string Name { get; set; }
         public string Category { get; set; }
         public int Quantity { get; set; }
-        public string ImageUrl { get; set; }      // ADD THIS - Equipment image
-        public string Description { get; set; }   // ADD THIS - Equipment description
+        public string ImageUrl { get; set; }
+        public string Description { get; set; }
     }
 
     public class BorrowRequest

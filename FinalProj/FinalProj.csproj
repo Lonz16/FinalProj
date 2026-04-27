@@ -159,6 +159,7 @@
     <Compile Include="Admin\BasePage.aspx.designer.cs">
       <DependentUpon>BasePage.aspx</DependentUpon>
     </Compile>
+    <Content Include="App_Code\DataaseHelper.cs" />
     <Compile Include="App_Code\Model.aspx.cs">
       <DependentUpon>Model.aspx</DependentUpon>
     </Compile>
