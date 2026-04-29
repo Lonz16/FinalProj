@@ -23,6 +23,68 @@
             background-clip: text;
             color: transparent;
         }
+        
+        /* Profile Picture Styles - Same as Admin */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .large-avatar {
+            width: 170px;
+            height: 170px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid #4f46e5;
+            cursor: pointer;
+            background: #1e293b;
+        }
+        .profile-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            z-index: 10000;
+            width: 300px;
+            border: 1px solid #475569;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .profile-popup-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 3px solid #4f46e5;
+            margin-bottom: 0.5rem;
+            background: #1e293b;
+        }
+        .file-upload-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            color: white;
+        }
+        .upload-btn-small {
+            background: #4f46e5;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        .upload-btn-small:hover {
+            background: #7c3aed;
+        }
+        
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -316,10 +378,16 @@
             hideLogoutModal();
             __doPostBack('btnProfessionalLogout', '');
         }
+        function showProfilePopup() {
+            document.getElementById('profilePopup').style.display = 'block';
+        }
+        function closeProfilePopup() {
+            document.getElementById('profilePopup').style.display = 'none';
+        }
         document.addEventListener('click', function (event) {
             var accPopup = document.getElementById('accountPopup');
             var notifPopup = document.getElementById('notificationPopup');
-            var avatar = document.querySelector('.avatar-container');
+            var avatar = document.querySelector('.large-avatar');
             var bell = document.querySelector('.notification-bell');
             var modal = document.getElementById('logoutModal');
             if (accPopup && avatar && !avatar.contains(event.target) && !accPopup.contains(event.target)) {
@@ -368,9 +436,7 @@
 
     <!-- Account Popup -->
     <div id="accountPopup" class="account-popup">
-        <div style="text-align:center; margin-bottom:1rem;">
-           
-        </div>
+        <div style="text-align:center; margin-bottom:1rem;"></div>
         <p><strong>🔑 Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
         <p><strong>👤 Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
         <p><strong>📧 Email:</strong> <asp:Label ID="lblPopupEmail" runat="server"></asp:Label></p>
@@ -382,10 +448,29 @@
         <asp:Literal ID="litNotificationContent" runat="server"></asp:Literal>
     </div>
 
+    <!-- Profile Picture Popup -->
+    <div id="profilePopup" class="profile-popup">
+        <div style="text-align:center;">
+            <asp:Image ID="imgProfile" runat="server" ImageUrl="~/Images/default-avatar.png" CssClass="profile-popup-image" />
+            <asp:FileUpload ID="fileUpload" runat="server" CssClass="file-upload-input" />
+            <asp:Button ID="btnUpload" runat="server" Text="Upload Picture" CssClass="upload-btn-small" OnClick="btnUpload_Click" />
+            <asp:Label ID="lblUploadMsg" runat="server" ForeColor="#34d399" style="font-size:0.7rem;" />
+            <br />
+            <button type="button" class="upload-btn-small" style="background:#475569; margin-top:0.5rem;" onclick="closeProfilePopup()">Close</button>
+        </div>
+    </div>
+
     <!-- Dashboard Content -->
     <div class="dashboard">
+        <!-- Dashboard Header with Profile Picture -->
         <div class="dashboard-header">
-            <h2>Teacher Console - <asp:Label ID="lblTeacherName" runat="server" style="color:#a78bfa"></asp:Label></h2>
+            <div class="header-left">
+                <asp:Image ID="imgLargeAvatar" runat="server" 
+                    ImageUrl="~/Images/default-avatar.png" 
+                    CssClass="large-avatar" 
+                    onclick="showProfilePopup()" />
+                <h2>Teacher Console - <asp:Label ID="lblTeacherName" runat="server" style="color:#a78bfa"></asp:Label></h2>
+            </div>
             <div class="right-icons">
                 <div class="notification-bell" onclick="toggleNotificationPopup()">
                     🔔
@@ -394,9 +479,6 @@
                 <button type="button" class="logout-btn-professional" onclick="showLogoutModal()">
                     🚪 Sign Out
                 </button>
-                <div class="avatar-container" onclick="toggleAccountPopup()">
-                  
-                </div>
             </div>
         </div>
 
@@ -441,7 +523,7 @@
                     </asp:TemplateField>
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No pending requests</td></tr>
+                    <tr><td colspan="4" style="text-align:center; padding:2rem;">✨ No pending requests</td>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>
@@ -462,7 +544,7 @@
                     <asp:ButtonField Text="Mark Returned" CommandName="MarkReturned" ButtonType="Button" ControlStyle-CssClass="btn btn-warning" />
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 No active borrows</td></tr>
+                    <tr><td colspan="5" style="text-align:center; padding:2rem;">📭 No active borrows</td>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>
@@ -486,7 +568,7 @@
                     </asp:TemplateField>
                 </Columns>
                 <EmptyDataTemplate>
-                    <tr><td colspan="7" style="text-align:center; padding:2rem;">✨ No pending extension requests</td></tr>
+                    <tr><td colspan="7" style="text-align:center; padding:2rem;">✨ No pending extension requests</td>
                 </EmptyDataTemplate>
             </asp:GridView>
         </div>

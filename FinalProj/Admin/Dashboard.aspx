@@ -22,6 +22,65 @@
             background-clip: text;
             color: transparent;
         }
+        
+        /* Profile Picture Styles */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .large-avatar {
+            width:170px;
+            height: 170px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 2px solid #4f46e5;
+            cursor: pointer;
+        }
+        .profile-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e293b;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            z-index: 10000;
+            width: 300px;
+            border: 1px solid #475569;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .profile-popup-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 2px solid #4f46e5;
+            margin-bottom: 0.5rem;
+        }
+        .file-upload-input {
+            width: 100%;
+            padding: 0.3rem;
+            margin: 0.5rem 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            color: white;
+        }
+        .upload-btn-small {
+            background: #4f46e5;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .upload-btn-small:hover {
+            background: #7c3aed;
+        }
+        
         .dashboard-header {
             display: flex;
             justify-content: space-between;
@@ -310,16 +369,23 @@
             hideLogoutModal();
             __doPostBack('btnProfessionalLogout', '');
         }
+        function showProfilePopup() {
+            document.getElementById('profilePopup').style.display = 'block';
+        }
+        function closeProfilePopup() {
+            document.getElementById('profilePopup').style.display = 'none';
+        }
     </script>
 </head>
 <body>
-<form id="form1" runat="server">
+<form id="form1" runat="server" enctype="multipart/form-data">
 <div class="container">
     <div class="header">
         <h1>🔐 BorrowBox Pro</h1>
         <p>Admin Control Panel</p>
     </div>
 
+    <!-- Logout Modal -->
     <div id="logoutModal" class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
@@ -337,27 +403,44 @@
         </div>
     </div>
 
+    <!-- Account Popup -->
     <div id="accountPopup" class="account-popup">
-        <div style="text-align:center; margin-bottom:1rem;">
-           
-        </div>
+        <div style="text-align:center; margin-bottom:1rem;"></div>
         <p><strong>Permanent ID:</strong> <asp:Label ID="lblPopupPermanentID" runat="server"></asp:Label></p>
         <p><strong>Name:</strong> <asp:Label ID="lblPopupName" runat="server"></asp:Label></p>
         <p><strong>Email:</strong> <asp:Label ID="lblPopupEmail" runat="server"></asp:Label></p>
         <p><strong>Role:</strong> <asp:Label ID="lblPopupRole" runat="server"></asp:Label></p>
     </div>
 
+    <!-- Notification Popup -->
     <div id="notificationPopup" class="notification-popup">
         <asp:Literal ID="litNotificationContent" runat="server"></asp:Literal>
     </div>
 
+   <!-- Profile Picture Popup -->
+<div id="profilePopup" class="profile-popup">
+    <div style="text-align:center;">
+        <asp:Image ID="imgProfile" runat="server" ImageUrl="~/Images/default-avatar.png" CssClass="profile-popup-image" />
+        <asp:FileUpload ID="fileUpload" runat="server" CssClass="file-upload-input" />
+        <asp:Button ID="btnUpload" runat="server" Text="Upload Picture" CssClass="upload-btn-small" OnClick="btnUpload_Click" />
+        <asp:Label ID="lblUploadMsg" runat="server" ForeColor="#34d399" style="font-size:0.7rem;" />
+        <br />
+        <button type="button" class="upload-btn-small" style="background:#475569; margin-top:0.5rem;" onclick="closeProfilePopup()">Close</button>
+    </div>
+</div>
+    <!-- Dashboard Content -->
     <div class="dashboard">
         <div class="dashboard-header">
-            <h2>Admin Panel - <asp:Label ID="lblAdminName" runat="server" style="color:#a78bfa"></asp:Label></h2>
+            <div class="header-left">
+                <asp:Image ID="imgLargeAvatar" runat="server" 
+                    ImageUrl="~/Images/default-avatar.png" 
+                    CssClass="large-avatar" 
+                    onclick="showProfilePopup()" />
+                <h2>Admin Panel - <asp:Label ID="lblAdminName" runat="server" style="color:#a78bfa"></asp:Label></h2>
+            </div>
             <div class="right-icons">
                 <div class="notification-bell" onclick="toggleNotificationPopup()">🔔<asp:Label ID="lblNotificationBadge" runat="server" CssClass="badge" Text="0"></asp:Label></div>
                 <button type="button" class="logout-btn-professional" onclick="showLogoutModal()">🚪 Sign Out</button>
-                <div class="avatar-container" onclick="toggleAccountPopup()"></div>
             </div>
         </div>
 
@@ -390,7 +473,9 @@
 
         <div class="section-title">📋 Activity Log</div>
         <asp:GridView ID="gvActivityLog" runat="server" AutoGenerateColumns="True" OnRowDataBound="gvActivityLog_RowDataBound">
-            <EmptyDataTemplate><tr><td colspan="3" style="text-align:center; padding:2rem;">No activity records found</td></tr></EmptyDataTemplate>
+            <EmptyDataTemplate>
+                <tr><td colspan="3" style="text-align:center; padding:2rem;">No activity records found</td></tr>
+            </EmptyDataTemplate>
         </asp:GridView>
     </div>
 </div>

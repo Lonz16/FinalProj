@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Web.UI.WebControls;
+using CanteenProject;
 
 namespace CanteenProject.Student
 {
@@ -33,6 +35,9 @@ namespace CanteenProject.Student
                 LoadStudentDashboard();
                 UpdateNotificationBadge();
             }
+
+            // Load profile picture
+            LoadProfilePicture();
         }
 
         private void LoadUserInfo()
@@ -239,16 +244,11 @@ namespace CanteenProject.Student
         // ========== SUBMIT EXTENSION REQUEST FROM MODAL ==========
         protected void btnSubmitExtension_Click(object sender, EventArgs e)
         {
-            // Get BorrowID from HiddenField (not ViewState)
+            // Get BorrowID from HiddenField
             int borrowId = 0;
             int.TryParse(hfBorrowID.Value, out borrowId);
             int daysToAdd = Convert.ToInt32(ddlExtendDays.SelectedValue);
             string email = Session["LoggedInUser"].ToString();
-
-            // Debug output
-            System.Diagnostics.Debug.WriteLine("=== SUBMIT EXTENSION REQUEST ===");
-            System.Diagnostics.Debug.WriteLine("BorrowID from hidden field: " + borrowId);
-            System.Diagnostics.Debug.WriteLine("Days to add: " + daysToAdd);
 
             var borrow = AppData.BorrowRecords.FirstOrDefault(b => b.BorrowID == borrowId && b.StudentEmail == email);
             if (borrow == null)
@@ -256,8 +256,6 @@ namespace CanteenProject.Student
                 lblStudentMessage.Text = "❌ Borrow record not found. BorrowID: " + borrowId;
                 lblStudentMessage.CssClass = "msg-error";
                 lblStudentMessage.Visible = true;
-
-                // Close modal
                 ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
                 return;
             }
@@ -311,7 +309,7 @@ namespace CanteenProject.Student
             // Check if extension exceeds 30 days total from today
             if (newDueDate > DateTime.Now.AddDays(30))
             {
-                lblStudentMessage.Text = "⚠️ Cannot extend beyond 30 days from today. Maximum extension not allowed.";
+                lblStudentMessage.Text = "⚠️ Cannot extend beyond 30 days from today.";
                 lblStudentMessage.CssClass = "msg-error";
                 lblStudentMessage.Visible = true;
                 ClientScript.RegisterStartupScript(this.GetType(), "closeModal", "closeExtensionModal();", true);
@@ -341,7 +339,7 @@ namespace CanteenProject.Student
             });
 
             AddActivityLog(email, Session["UserName"].ToString(), "Student", "Extension Request",
-                "Requested " + daysToAdd + "-day extension for '" + borrow.EquipmentName + "' to " + newDueDate.ToString("yyyy-MM-dd"));
+                "Requested " + daysToAdd + "-day extension for '" + borrow.EquipmentName + "'");
 
             lblStudentMessage.Text = "✅ Extension request for " + daysToAdd + " days sent to teacher for approval.";
             lblStudentMessage.CssClass = "msg-success";
@@ -352,7 +350,98 @@ namespace CanteenProject.Student
             LoadStudentDashboard();
             UpdateNotificationBadge();
         }
-        // ========== END EXTENSION REQUEST METHOD ==========
+
+        // ========== PROFILE PICTURE METHODS ==========
+
+        private void LoadProfilePicture()
+        {
+            try
+            {
+                string email = Session["LoggedInUser"] as string;
+                if (string.IsNullOrEmpty(email)) return;
+
+                var user = GetUserByEmail(email);
+                if (user != null && !string.IsNullOrEmpty(user.ProfilePictureUrl))
+                {
+                    string physicalPath = Server.MapPath(user.ProfilePictureUrl);
+                    if (File.Exists(physicalPath))
+                    {
+                        string finalUrl = user.ProfilePictureUrl + "?t=" + DateTime.Now.Ticks;
+                        imgProfile.ImageUrl = finalUrl;
+                        imgLargeAvatar.ImageUrl = finalUrl;
+                        return;
+                    }
+                }
+                imgProfile.ImageUrl = "~/Images/default-avatar.png";
+                imgLargeAvatar.ImageUrl = "~/Images/default-avatar.png";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadProfilePicture Error: " + ex.Message);
+            }
+        }
+
+        protected void btnUpload_Click(object sender, EventArgs e)
+        {
+            if (fileUpload.HasFile)
+            {
+                string ext = Path.GetExtension(fileUpload.FileName).ToLower();
+                if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                {
+                    if (fileUpload.PostedFile.ContentLength <= 2 * 1024 * 1024)
+                    {
+                        try
+                        {
+                            string folder = Server.MapPath("~/Images/Profiles/");
+                            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+                            string fileName = Guid.NewGuid().ToString() + ext;
+                            string relativePath = "~/Images/Profiles/" + fileName;
+                            fileUpload.SaveAs(Server.MapPath(relativePath));
+
+                            string email = Session["LoggedInUser"] as string;
+                            var user = GetUserByEmail(email);
+                            if (user != null)
+                            {
+                                if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                {
+                                    string oldPath = Server.MapPath(user.ProfilePictureUrl);
+                                    if (File.Exists(oldPath)) File.Delete(oldPath);
+                                }
+                                user.ProfilePictureUrl = relativePath;
+                                LoadProfilePicture();
+                                lblUploadMsg.Text = "Profile picture updated!";
+                                lblUploadMsg.ForeColor = System.Drawing.Color.Green;
+
+                                AddActivityLog(email, user.FullName, "Student", "Profile Picture", "Updated profile picture");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lblUploadMsg.Text = "Error: " + ex.Message;
+                            lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                        }
+                    }
+                    else
+                    {
+                        lblUploadMsg.Text = "File too large (max 2MB)";
+                        lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                    }
+                }
+                else
+                {
+                    lblUploadMsg.Text = "Only JPG, PNG, GIF files allowed";
+                    lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                }
+            }
+            else
+            {
+                lblUploadMsg.Text = "Please select a file";
+                lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+            }
+        }
+
+        // ========== END PROFILE PICTURE METHODS ==========
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {

@@ -13,20 +13,17 @@ namespace CanteenProject
             base.OnLoad(e);
             SeedDataIfNeeded();
 
-            // Skip auth for account pages
             string path = Request.Url.AbsolutePath.ToLower();
             if (path.Contains("/account/") || path == "/default.aspx")
                 return;
 
-            // Check login
             if (Session["LoggedInUser"] == null)
             {
                 Response.Redirect("~/Account/Login.aspx");
                 return;
             }
 
-            // Check role access
-            string userRole = Session["UserRole"]?.ToString();
+            string userRole = Session["UserRole"] as string;
             if (path.Contains("/student/") && userRole != "Student")
                 Response.Redirect("~/Unauthorized.aspx");
             else if (path.Contains("/teacher/") && userRole != "Teacher")
@@ -50,25 +47,30 @@ namespace CanteenProject
                     Email = "admin@borrowbox.com",
                     PasswordHash = HashPassword("Admin@123"),
                     Role = "Admin",
-                    InviteCode = adminCode,
-                    InvitedByAdminCode = null,
-                    ProfilePictureUrl = "~/Admin/SetProfilePicture/jayr.jpg"  // ← PERMANENTLY SET HERE
+                    InviteCode = adminCode
                 };
                 AppData.Users.Add(admin);
                 AppData.NextUserID = 1002;
 
                 AddActivityLog(admin.Email, admin.FullName, admin.Role, "System",
-                               $"System initialized. Admin invite code: {adminCode}");
+                               "System initialized. Admin invite code: " + adminCode);
             }
 
-            // ... rest of your code
+            AppData.IsSeeded = true;
         }
+
         protected User GetCurrentUser()
         {
-            string email = Session["LoggedInUser"]?.ToString();
+            string email = Session["LoggedInUser"] as string;
             if (string.IsNullOrEmpty(email)) return null;
             return AppData.Users.FirstOrDefault(u =>
                 u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        }
+
+        protected User GetUserByEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email)) return null;
+            return AppData.Users.FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
         }
 
         protected string HashPassword(string password)
@@ -106,8 +108,7 @@ namespace CanteenProject
                 .ToArray());
         }
 
-        protected void AddActivityLog(string actorEmail, string actorName, string actorRole,
-     string action, string details)
+        protected void AddActivityLog(string actorEmail, string actorName, string actorRole, string action, string details)
         {
             AppData.ActivityLogs.Add(new ActivityLog
             {
@@ -126,8 +127,8 @@ namespace CanteenProject
             if (Session["LoggedInUser"] != null)
             {
                 AddActivityLog(Session["LoggedInUser"].ToString(),
-                    Session["UserName"].ToString(),
-                    Session["UserRole"].ToString(),
+                    Session["UserName"] as string,
+                    Session["UserRole"] as string,
                     "Logout", "User logged out.");
             }
             Session.Clear();

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Web.UI.WebControls;
+using CanteenProject;
 
 namespace CanteenProject.Admin
 {
@@ -14,19 +16,29 @@ namespace CanteenProject.Admin
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Check login
+            if (Session["LoggedInUser"] == null)
+            {
+                Response.Redirect("~/Account/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                string userEmail = Session["LoggedInUser"].ToString();
-              
-
                 var user = GetCurrentUser();
-                if (user != null) lblLogoutUserName.Text = $"{user.FullName} ({user.Email})";
+                if (user != null)
+                {
+                    lblLogoutUserName.Text = user.FullName + " (" + user.Email + ")";
+                }
 
                 LoadUserInfo();
                 LoadAdminDashboard();
                 UpdateNotificationBadge();
                 LoadActivityLog();
             }
+
+            // Load profile picture
+            LoadProfilePicture();
         }
 
         private void LoadUserInfo()
@@ -68,9 +80,14 @@ namespace CanteenProject.Admin
             gvActivityLog.DataSource = logList;
             gvActivityLog.DataBind();
 
-            lblSearchStats.Text = string.IsNullOrEmpty(UnifiedSearchText)
-                ? $"📋 Showing {logList.Count} total activity records"
-                : $"🔍 Found {logList.Count} record(s) matching '{UnifiedSearchText}'";
+            if (string.IsNullOrEmpty(UnifiedSearchText))
+            {
+                lblSearchStats.Text = "📋 Showing " + logList.Count + " total activity records";
+            }
+            else
+            {
+                lblSearchStats.Text = "🔍 Found " + logList.Count + " record(s) matching '" + UnifiedSearchText + "'";
+            }
         }
 
         protected void gvActivityLog_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -111,9 +128,108 @@ namespace CanteenProject.Admin
             LoadActivityLog();
         }
 
+        // ========== PROFILE PICTURE METHODS ==========
+
+        private void LoadProfilePicture()
+        {
+            try
+            {
+                string email = Session["LoggedInUser"] as string;
+                if (string.IsNullOrEmpty(email)) return;
+
+                var user = GetUserByEmail(email);
+                if (user != null && !string.IsNullOrEmpty(user.ProfilePictureUrl))
+                {
+                    string physicalPath = Server.MapPath(user.ProfilePictureUrl);
+                    if (File.Exists(physicalPath))
+                    {
+                        string finalUrl = user.ProfilePictureUrl + "?t=" + DateTime.Now.Ticks;
+                        imgProfile.ImageUrl = finalUrl;
+                        imgLargeAvatar.ImageUrl = finalUrl;
+                        return;
+                    }
+                }
+                imgProfile.ImageUrl = "~/Images/default-avatar.png";
+                imgLargeAvatar.ImageUrl = "~/Images/default-avatar.png";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadProfilePicture Error: " + ex.Message);
+            }
+        }
+
+        protected void btnUpload_Click(object sender, EventArgs e)
+        {
+            if (fileUpload.HasFile)
+            {
+                string ext = Path.GetExtension(fileUpload.FileName).ToLower();
+                if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                {
+                    if (fileUpload.PostedFile.ContentLength <= 2 * 1024 * 1024)
+                    {
+                        try
+                        {
+                            string folder = Server.MapPath("~/Images/Profiles/");
+                            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+                            string fileName = Guid.NewGuid().ToString() + ext;
+                            string relativePath = "~/Images/Profiles/" + fileName;
+                            fileUpload.SaveAs(Server.MapPath(relativePath));
+
+                            string email = Session["LoggedInUser"] as string;
+                            var user = GetUserByEmail(email);
+                            if (user != null)
+                            {
+                                if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                {
+                                    string oldPath = Server.MapPath(user.ProfilePictureUrl);
+                                    if (File.Exists(oldPath)) File.Delete(oldPath);
+                                }
+                                user.ProfilePictureUrl = relativePath;
+                                LoadProfilePicture();
+                                lblUploadMsg.Text = "Profile picture updated!";
+                                lblUploadMsg.ForeColor = System.Drawing.Color.Green;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lblUploadMsg.Text = "Error: " + ex.Message;
+                            lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                        }
+                    }
+                    else
+                    {
+                        lblUploadMsg.Text = "File too large (max 2MB)";
+                        lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                    }
+                }
+                else
+                {
+                    lblUploadMsg.Text = "Only JPG, PNG, GIF files allowed";
+                    lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                }
+            }
+            else
+            {
+                lblUploadMsg.Text = "Please select a file";
+                lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+            }
+        }
+
         private void UpdateNotificationBadge()
         {
-            int count = AppData.BorrowRecords.Count(b => b.Status == "Borrowed" && DateTime.TryParse(b.DueDate, out DateTime due) && (due - DateTime.Now).Days <= 3);
+            int count = 0;
+            foreach (var b in AppData.BorrowRecords)
+            {
+                if (b.Status == "Borrowed")
+                {
+                    DateTime due;
+                    if (DateTime.TryParse(b.DueDate, out due))
+                    {
+                        if ((due - DateTime.Now).Days <= 3) count++;
+                    }
+                }
+            }
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
         }
 

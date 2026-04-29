@@ -78,6 +78,42 @@ namespace CanteenProject.Student
         protected global::System.Web.UI.WebControls.Literal litNotificationContent;
 
         /// <summary>
+        /// imgProfile control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Image imgProfile;
+
+        /// <summary>
+        /// fileUpload control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.FileUpload fileUpload;
+
+        /// <summary>
+        /// btnUpload control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnUpload;
+
+        /// <summary>
+        /// lblUploadMsg control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblUploadMsg;
+
+        /// <summary>
         /// lblExtendEquipmentName control.
         /// </summary>
         /// <remarks>
@@ -121,6 +157,15 @@ namespace CanteenProject.Student
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.HiddenField hfBorrowID;
+
+        /// <summary>
+        /// imgLargeAvatar control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Image imgLargeAvatar;
 
         /// <summary>
         /// lblStudentName control.

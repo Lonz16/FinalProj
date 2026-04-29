@@ -1,7 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Web.UI.WebControls;
-using System.Drawing;
+using CanteenProject;
 
 namespace CanteenProject.Teacher
 {
@@ -16,14 +17,22 @@ namespace CanteenProject.Teacher
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Check login
+            if (Session["LoggedInUser"] == null)
+            {
+                Response.Redirect("~/Account/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                string userEmail = Session["LoggedInUser"].ToString();
-
                 LoadUserInfo();
                 LoadTeacherDashboard();
                 UpdateNotificationBadge();
             }
+
+            // Load profile picture
+            LoadProfilePicture();
         }
 
         private void LoadUserInfo()
@@ -52,7 +61,6 @@ namespace CanteenProject.Teacher
         {
             var pending = AppData.BorrowRequests.Where(r => r.Status == "Pending").AsQueryable();
 
-            // Apply unified search filter
             if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
                 string searchLower = UnifiedSearchText.ToLower();
@@ -73,7 +81,6 @@ namespace CanteenProject.Teacher
         {
             var active = AppData.BorrowRecords.Where(b => b.Status == "Borrowed").AsQueryable();
 
-            // Apply unified search filter
             if (!string.IsNullOrEmpty(UnifiedSearchText))
             {
                 string searchLower = UnifiedSearchText.ToLower();
@@ -151,7 +158,6 @@ namespace CanteenProject.Teacher
                     }
                 }
 
-                // Also check Due Date label
                 Label lblDueDate = (Label)e.Row.FindControl("lblDueDate");
                 if (lblDueDate != null && lblDueDate.Text.ToLower().Contains(UnifiedSearchText.ToLower()))
                 {
@@ -208,7 +214,7 @@ namespace CanteenProject.Teacher
             lblNotificationBadge.Text = count > 0 ? count.ToString() : "0";
         }
 
-        // Add this method to load extension requests
+        // Load extension requests
         private void LoadExtensionRequests()
         {
             var extensions = AppData.ExtensionRequests.Where(r => r.Status == "Pending").AsQueryable();
@@ -257,7 +263,7 @@ namespace CanteenProject.Teacher
             lblDebugInfo.CssClass = "msg-info";
         }
 
-        // Add this method to handle approve/deny extension requests
+        // Handle approve/deny extension requests
         protected void gvExtensionRequests_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName != "ApproveExt" && e.CommandName != "DenyExt") return;
@@ -300,7 +306,7 @@ namespace CanteenProject.Teacher
             UpdateNotificationBadge();
         }
 
-        // Add RowDataBound for highlighting
+        // RowDataBound for highlighting
         protected void gvExtensionRequests_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType == DataControlRowType.DataRow && !string.IsNullOrEmpty(UnifiedSearchText))
@@ -395,6 +401,98 @@ namespace CanteenProject.Teacher
             LoadTeacherDashboard();
             UpdateNotificationBadge();
         }
+
+        // ========== PROFILE PICTURE METHODS ==========
+
+        private void LoadProfilePicture()
+        {
+            try
+            {
+                string email = Session["LoggedInUser"] as string;
+                if (string.IsNullOrEmpty(email)) return;
+
+                var user = GetUserByEmail(email);
+                if (user != null && !string.IsNullOrEmpty(user.ProfilePictureUrl))
+                {
+                    string physicalPath = Server.MapPath(user.ProfilePictureUrl);
+                    if (File.Exists(physicalPath))
+                    {
+                        string finalUrl = user.ProfilePictureUrl + "?t=" + DateTime.Now.Ticks;
+                        imgProfile.ImageUrl = finalUrl;
+                        imgLargeAvatar.ImageUrl = finalUrl;
+                        return;
+                    }
+                }
+                imgProfile.ImageUrl = "~/Images/default-avatar.png";
+                imgLargeAvatar.ImageUrl = "~/Images/default-avatar.png";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadProfilePicture Error: " + ex.Message);
+            }
+        }
+
+        protected void btnUpload_Click(object sender, EventArgs e)
+        {
+            if (fileUpload.HasFile)
+            {
+                string ext = Path.GetExtension(fileUpload.FileName).ToLower();
+                if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+                {
+                    if (fileUpload.PostedFile.ContentLength <= 2 * 1024 * 1024)
+                    {
+                        try
+                        {
+                            string folder = Server.MapPath("~/Images/Profiles/");
+                            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+                            string fileName = Guid.NewGuid().ToString() + ext;
+                            string relativePath = "~/Images/Profiles/" + fileName;
+                            fileUpload.SaveAs(Server.MapPath(relativePath));
+
+                            string email = Session["LoggedInUser"] as string;
+                            var user = GetUserByEmail(email);
+                            if (user != null)
+                            {
+                                if (!string.IsNullOrEmpty(user.ProfilePictureUrl))
+                                {
+                                    string oldPath = Server.MapPath(user.ProfilePictureUrl);
+                                    if (File.Exists(oldPath)) File.Delete(oldPath);
+                                }
+                                user.ProfilePictureUrl = relativePath;
+                                LoadProfilePicture();
+                                lblUploadMsg.Text = "Profile picture updated!";
+                                lblUploadMsg.ForeColor = System.Drawing.Color.Green;
+
+                                AddActivityLog(email, user.FullName, "Teacher", "Profile Picture", "Updated profile picture");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            lblUploadMsg.Text = "Error: " + ex.Message;
+                            lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                        }
+                    }
+                    else
+                    {
+                        lblUploadMsg.Text = "File too large (max 2MB)";
+                        lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                    }
+                }
+                else
+                {
+                    lblUploadMsg.Text = "Only JPG, PNG, GIF files allowed";
+                    lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+                }
+            }
+            else
+            {
+                lblUploadMsg.Text = "Please select a file";
+                lblUploadMsg.ForeColor = System.Drawing.Color.Red;
+            }
+        }
+
+        // ========== END PROFILE PICTURE METHODS ==========
 
         protected void btnLogout_Click(object sender, EventArgs e)
         {
